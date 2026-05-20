@@ -17,6 +17,7 @@ export function ProjectForm({ mode, projectId, onNavigate }: ProjectFormProps) {
 
   const [formData, setFormData] = useState({
     name: existingProject?.name || "",
+    subdomain: existingProject?.tenantId || "",
     rera: existingProject?.rera || "",
     address: existingProject?.location || "",
     status: existingProject?.status || "Planning",
@@ -26,8 +27,33 @@ export function ProjectForm({ mode, projectId, onNavigate }: ProjectFormProps) {
     description: existingProject?.description || ""
   });
 
+  const [isSubdomainManual, setIsSubdomainManual] = useState(false);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setFormData(prev => {
+      const next = { ...prev, [name]: value };
+      if (name === "name" && mode === "create" && !isSubdomainManual) {
+        next.subdomain = value
+          .toLowerCase()
+          .replace(/\s+/g, "-")
+          .replace(/[^a-z0-9-]/g, "")
+          .slice(0, 30);
+      }
+      return next;
+    });
+  };
+
+  const handleSubdomainChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setIsSubdomainManual(true);
+    setFormData(prev => ({
+      ...prev,
+      subdomain: e.target.value
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-]/g, "")
+        .slice(0, 30)
+    }));
   };
 
   const handleSave = () => {
@@ -35,6 +61,7 @@ export function ProjectForm({ mode, projectId, onNavigate }: ProjectFormProps) {
       addProject({
         name: formData.name,
         rera: formData.rera,
+        subdomain: formData.subdomain || formData.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "").slice(0, 30),
         location: formData.address,
         status: formData.status,
         startDate: formData.startDate,
@@ -91,7 +118,7 @@ export function ProjectForm({ mode, projectId, onNavigate }: ProjectFormProps) {
               <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs">1</span>
               Basic Information
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pl-8">
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-foreground">Project Name</label>
                 <input 
@@ -99,9 +126,31 @@ export function ProjectForm({ mode, projectId, onNavigate }: ProjectFormProps) {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
                   placeholder="e.g. Shri Hari Elegance"
                 />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-foreground">Workspace Subdomain</label>
+                <div className="flex">
+                  <input 
+                    type="text"
+                    name="subdomain"
+                    disabled={mode === "edit"}
+                    value={formData.subdomain}
+                    onChange={handleSubdomainChange}
+                    className="w-full bg-background border border-border rounded-l-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60 text-foreground"
+                    placeholder="e.g. elegance"
+                  />
+                  <span className="inline-flex items-center px-3 rounded-r-lg border border-l-0 border-border bg-muted text-muted-foreground text-xs font-semibold">
+                    .localhost
+                  </span>
+                </div>
+                {mode === "create" && (
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Workspace URL: <span className="font-semibold text-primary">http://{formData.subdomain || "subdomain"}.localhost:5173</span>
+                  </p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-foreground">RERA Number</label>
@@ -110,7 +159,7 @@ export function ProjectForm({ mode, projectId, onNavigate }: ProjectFormProps) {
                   name="rera"
                   value={formData.rera}
                   onChange={handleChange}
-                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
                   placeholder="e.g. PR/GJ/..."
                 />
               </div>

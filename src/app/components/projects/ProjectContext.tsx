@@ -56,7 +56,7 @@ export interface Project {
 
 interface ProjectContextType {
   projects: Project[];
-  addProject: (project: Omit<Project, "id" | "tenantId">) => void;
+  addProject: (project: Omit<Project, "id" | "tenantId"> & { subdomain?: string }) => void;
   updateProject: (id: string, updates: Partial<Project>) => void;
   getProject: (id: string) => Project | undefined;
   addTask: (projectId: string, task: Omit<Task, "id">) => void;
@@ -81,7 +81,7 @@ const defaultProjects: Project[] = [
     completion: "Dec 2025",
     budget: "₹120 Cr",
     spent: "₹78 Cr",
-    image: "https://images.unsplash.com/photo-1758210784345-96fc36926234?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBjb25zdHJ1Y3Rpb24lMjBidWlsZGluZyUyMGFyY2hpdGVjdHVyZSUyMGluZGlhfGVufDF8fHx8MTc3OTE2OTgxOXww&ixlib=rb-4.1.0&q=80&w=1080"
+    image: "https://images.unsplash.com/photo-1758210784345-96fc36926234?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBjb25zdHJ1Y3Rpb258ZW58MXx8fHwxNzc5MTY5OTE5fDA&ixlib=rb-4.1.0&q=80&w=1080"
   },
   {
     id: "PRJ-002",
@@ -132,11 +132,11 @@ export function ProjectProvider({ children, tenantId }: { children: ReactNode; t
   const activeTenantId = tenantId || "shg-001";
   const projects = allProjects.filter(p => p.tenantId === activeTenantId);
 
-  const addProject = (projectData: Omit<Project, "id" | "tenantId">) => {
+  const addProject = (projectData: Omit<Project, "id" | "tenantId"> & { subdomain?: string }) => {
     const newProject: Project = {
       ...projectData,
       id: "PRJ-" + Math.floor(Math.random() * 10000).toString().padStart(4, "0"),
-      tenantId: activeTenantId,
+      tenantId: projectData.subdomain || activeTenantId,
     };
     persist([...allProjects, newProject]);
   };

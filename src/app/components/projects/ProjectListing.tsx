@@ -126,7 +126,17 @@ export function ProjectListing({ onNavigate }: ProjectListingProps) {
                           {project.status}
                         </span>
                       </div>
-                      <p className="text-xs text-muted-foreground font-medium">{project.rera}</p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
+                        <span>{project.rera}</span>
+                        {project.tenantId && (
+                          <>
+                            <span>·</span>
+                            <span className="bg-primary/5 text-primary px-1.5 py-0.5 rounded font-mono font-bold text-[10px] border border-primary/10">
+                              subdomain: {project.tenantId}
+                            </span>
+                          </>
+                        )}
+                      </div>
                     </div>
                     <button className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted">
                       <MoreHorizontal size={16} />
