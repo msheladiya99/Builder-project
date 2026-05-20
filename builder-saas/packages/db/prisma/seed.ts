@@ -111,6 +111,13 @@ async function main() {
       phone: "+91 98765 43213",
       roleId: dbRoles["Accountant"].id,
       tenantId: "shg-001"
+    },
+    {
+      name: "Hari Admin",
+      email: "user@hariheights.in",
+      phone: "+91 98765 43214",
+      roleId: dbRoles["Project Admin"].id,
+      tenantId: "hariheights"
     }
   ];
 

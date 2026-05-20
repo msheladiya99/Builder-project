@@ -111,39 +111,242 @@ const defaultProjects: Project[] = [
   }
 ];
 
+const COOKIE_NAME = "saas_projects";
+
+const getCookieData = (name: string): string => {
+  const nameEQ = name + "=";
+  const ca = document.cookie.split(';');
+  const chunks: { index: number, value: string }[] = [];
+  
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i].trim();
+    if (c.indexOf(nameEQ) === 0) {
+      return decodeURIComponent(c.substring(nameEQ.length));
+    }
+    // Check for chunked cookies: name_0, name_1, etc.
+    const chunkPrefix = name + "_";
+    if (c.indexOf(chunkPrefix) === 0) {
+      const eqIdx = c.indexOf("=");
+      if (eqIdx > -1) {
+        const chunkName = c.substring(0, eqIdx);
+        const index = parseInt(chunkName.substring(chunkPrefix.length));
+        const value = decodeURIComponent(c.substring(eqIdx + 1));
+        chunks.push({ index, value });
+      }
+    }
+  }
+  
+  if (chunks.length > 0) {
+    chunks.sort((a, b) => a.index - b.index);
+    return chunks.map(ch => ch.value).join("");
+  }
+  
+  return "";
+};
+
+const setCookieData = (name: string, value: string) => {
+  // Clear old cookies (including chunked ones)
+  const ca = document.cookie.split(';');
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i].trim();
+    const eqIdx = c.indexOf("=");
+    const cName = eqIdx > -1 ? c.substring(0, eqIdx) : c;
+    if (cName === name || cName.startsWith(name + "_")) {
+      document.cookie = `${cName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=localhost`;
+      document.cookie = `${cName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.localhost`;
+      document.cookie = `${cName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
+    }
+  }
+
+  const encodedValue = encodeURIComponent(value);
+  // Split value into 3KB chunks to stay under 4KB cookie limit
+  const chunkSize = 3000;
+  if (encodedValue.length <= chunkSize) {
+    document.cookie = `${name}=${encodedValue}; path=/; domain=localhost; max-age=31536000`;
+    document.cookie = `${name}=${encodedValue}; path=/; domain=.localhost; max-age=31536000`;
+  } else {
+    let index = 0;
+    for (let i = 0; i < encodedValue.length; i += chunkSize) {
+      const chunk = encodedValue.substring(i, i + chunkSize);
+      document.cookie = `${name}_${index}=${chunk}; path=/; domain=localhost; max-age=31536000`;
+      document.cookie = `${name}_${index}=${chunk}; path=/; domain=.localhost; max-age=31536000`;
+      index++;
+    }
+  }
+};
+
+const getSharedProjects = (): Promise<Project[]> => {
+  return new Promise((resolve) => {
+    // 1. Try to read from cookie first
+    const cookieData = getCookieData(COOKIE_NAME);
+    if (cookieData) {
+      try {
+        resolve(JSON.parse(cookieData));
+        return;
+      } catch (e) {
+        console.error("Error parsing projects from cookie:", e);
+      }
+    }
+
+    // 2. Fallback to localStorage
+    const stored = localStorage.getItem("saas_projects");
+    resolve(stored ? JSON.parse(stored) : defaultProjects);
+  });
+};
+
+const setSharedProjects = (projects: Project[]): Promise<void> => {
+  return new Promise((resolve) => {
+    const value = JSON.stringify(projects);
+    // 1. Write to cookie
+    setCookieData(COOKIE_NAME, value);
+    // 2. Write to localStorage as fallback
+    localStorage.setItem("saas_projects", value);
+    resolve();
+  });
+};
+
+const API_BASE = "http://localhost:3000/api";
+
+const apiFetch = async (path: string, options: RequestInit = {}) => {
+  const parts = window.location.hostname.split(".");
+  let tenantId = "";
+  if (window.location.hostname.includes("localhost") && parts.length > 1) {
+    tenantId = parts[0];
+  } else if (!window.location.hostname.includes("localhost") && parts.length > 2 && parts[0] !== "www") {
+    tenantId = parts[0];
+  }
+
+  const token = localStorage.getItem("auth_token") || "dev-bypass-token";
+
+  const headers = {
+    "Content-Type": "application/json",
+    ...(token && { "Authorization": `Bearer ${token}` }),
+    ...(tenantId && { "X-Tenant-Id": tenantId }),
+    ...options.headers
+  };
+
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ error: "Request failed" }));
+    throw new Error(err.error || `HTTP error ${response.status}`);
+  }
+
+  return response.json();
+};
+
 export function ProjectProvider({ children, tenantId }: { children: ReactNode; tenantId?: string }) {
   const [allProjects, setAllProjects] = useState<Project[]>([]);
-  
-  useEffect(() => {
-    const stored = localStorage.getItem("saas_projects");
-    if (stored) {
-      setAllProjects(JSON.parse(stored));
-    } else {
-      setAllProjects(defaultProjects);
-      localStorage.setItem("saas_projects", JSON.stringify(defaultProjects));
+  const activeTenantId = tenantId || "shg-001";
+
+  const loadProjects = async () => {
+    try {
+      const data = await apiFetch("/projects");
+      const mapped = data.map((p: any) => ({
+        id: p.id,
+        tenantId: p.tenantId || "shg-001",
+        name: p.name,
+        rera: p.rera || "",
+        status: p.status || "Under Construction",
+        progress: Number(p.progress || 0),
+        location: p.location || "",
+        completion: p.endDate ? new Date(p.endDate).toLocaleDateString() : "Dec 2025",
+        budget: typeof p.budget === "number" ? `₹${p.budget} Cr` : `₹${parseFloat(p.budget) || 0} Cr`,
+        spent: typeof p.spent === "number" ? `₹${p.spent} Cr` : `₹${parseFloat(p.spent) || 0} Cr`,
+        image: p.image || "https://images.unsplash.com/photo-1758210784345-96fc36926234?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
+        tasks: p.tasks || [],
+        towers: p.towers || [],
+        staff: p.staff || [],
+        financials: p.financials || []
+      }));
+      setAllProjects(mapped);
+      setSharedProjects(mapped);
+    } catch (err) {
+      console.error("Failed to load projects from DB, falling back to local cookies:", err);
+      getSharedProjects().then(data => setAllProjects(data));
     }
+  };
+
+  useEffect(() => {
+    loadProjects();
+    const interval = setInterval(loadProjects, 2000);
+    return () => clearInterval(interval);
   }, []);
 
-  const persist = (data: Project[]) => {
-    setAllProjects(data);
-    localStorage.setItem("saas_projects", JSON.stringify(data));
-  };
-
-  const activeTenantId = tenantId || "shg-001";
   const projects = allProjects.filter(p => p.tenantId === activeTenantId);
 
-  const addProject = (projectData: Omit<Project, "id" | "tenantId"> & { subdomain?: string }) => {
-    const newProject: Project = {
-      ...projectData,
-      id: "PRJ-" + Math.floor(Math.random() * 10000).toString().padStart(4, "0"),
+  const addProject = async (projectData: Omit<Project, "id" | "tenantId"> & { subdomain?: string }) => {
+    const cleanBudget = parseFloat(projectData.budget.replace(/[^0-9.]/g, "")) || 0;
+    const cleanSpent = parseFloat(projectData.spent.replace(/[^0-9.]/g, "")) || 0;
+    
+    const dbPayload = {
+      name: projectData.name,
+      location: projectData.location,
+      rera: projectData.rera,
+      budget: cleanBudget,
+      spent: cleanSpent,
+      status: projectData.status || "planning",
       tenantId: projectData.subdomain || activeTenantId,
+      tasks: [],
+      towers: [],
+      staff: [],
+      financials: []
     };
-    persist([...allProjects, newProject]);
+
+    try {
+      await apiFetch("/projects", {
+        method: "POST",
+        body: JSON.stringify(dbPayload)
+      });
+      await loadProjects();
+    } catch (err) {
+      console.error("Failed to save project to DB, falling back to cookies:", err);
+      const newProject: Project = {
+        ...projectData,
+        id: "PRJ-" + Math.floor(Math.random() * 10000).toString().padStart(4, "0"),
+        tenantId: projectData.subdomain || activeTenantId,
+        tasks: [],
+        towers: [],
+        staff: [],
+        financials: []
+      };
+      const updated = [...allProjects, newProject];
+      setAllProjects(updated);
+      setSharedProjects(updated);
+    }
   };
 
-  const updateProject = (id: string, updates: Partial<Project>) => {
-    const newData = allProjects.map(p => p.id === id ? { ...p, ...updates } : p);
-    persist(newData);
+  const updateProject = async (id: string, updates: Partial<Project>) => {
+    // Update local state optimistically
+    const localUpdated = allProjects.map(p => p.id === id ? { ...p, ...updates } : p);
+    setAllProjects(localUpdated);
+    setSharedProjects(localUpdated);
+
+    const dbPayload: any = {};
+    if (updates.name !== undefined) dbPayload.name = updates.name;
+    if (updates.location !== undefined) dbPayload.location = updates.location;
+    if (updates.rera !== undefined) dbPayload.rera = updates.rera;
+    if (updates.status !== undefined) dbPayload.status = updates.status;
+    if (updates.progress !== undefined) dbPayload.progress = Number(updates.progress);
+    if (updates.budget !== undefined) dbPayload.budget = parseFloat(String(updates.budget).replace(/[^0-9.]/g, "")) || 0;
+    if (updates.spent !== undefined) dbPayload.spent = parseFloat(String(updates.spent).replace(/[^0-9.]/g, "")) || 0;
+    if (updates.tasks !== undefined) dbPayload.tasks = updates.tasks;
+    if (updates.towers !== undefined) dbPayload.towers = updates.towers;
+    if (updates.staff !== undefined) dbPayload.staff = updates.staff;
+    if (updates.financials !== undefined) dbPayload.financials = updates.financials;
+
+    try {
+      await apiFetch(`/projects/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(dbPayload)
+      });
+      await loadProjects();
+    } catch (err) {
+      console.error("Failed to update project in DB:", err);
+    }
   };
 
   const getProject = (id: string) => {

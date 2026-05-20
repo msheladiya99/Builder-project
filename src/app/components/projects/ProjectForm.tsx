@@ -79,6 +79,7 @@ export function ProjectForm({ mode, projectId, onNavigate }: ProjectFormProps) {
       updateProject(projectId, {
         name: formData.name,
         rera: formData.rera,
+        tenantId: formData.subdomain,
         location: formData.address,
         status: formData.status,
         startDate: formData.startDate,
@@ -136,7 +137,6 @@ export function ProjectForm({ mode, projectId, onNavigate }: ProjectFormProps) {
                   <input 
                     type="text"
                     name="subdomain"
-                    disabled={mode === "edit"}
                     value={formData.subdomain}
                     onChange={handleSubdomainChange}
                     className="w-full bg-background border border-border rounded-l-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60 text-foreground"
@@ -146,11 +146,17 @@ export function ProjectForm({ mode, projectId, onNavigate }: ProjectFormProps) {
                     .localhost
                   </span>
                 </div>
-                {mode === "create" && (
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    Workspace URL: <span className="font-semibold text-primary">http://{formData.subdomain || "subdomain"}.localhost:5173</span>
-                  </p>
-                )}
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Workspace URL:{" "}
+                  <a 
+                    href={`http://${formData.subdomain || "subdomain"}.localhost:${window.location.port || "5173"}/saas`} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="font-semibold text-primary hover:underline"
+                  >
+                    http://{formData.subdomain || "subdomain"}.localhost:{window.location.port || "5173"}/saas
+                  </a>
+                </p>
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-foreground">RERA Number</label>
