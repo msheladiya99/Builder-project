@@ -52,6 +52,28 @@ export interface Project {
   staff?: Staff[];
   financials?: FinancialQuarter[];
   towers?: Tower[];
+  settings?: ProjectSettings;
+}
+
+export interface ProjectSettings {
+  phase?: string;
+  currency?: string;
+  allowContractorsViewProgress?: boolean;
+  requireAdminApprovalBudget?: boolean;
+  enableClientPortalAccess?: boolean;
+  approvals?: {
+    naNocStatus?: 'approved' | 'pending';
+    buildingPlanStatus?: 'approved' | 'pending';
+    environmentalStatus?: 'approved' | 'pending';
+    fireSafetyStatus?: 'approved' | 'pending';
+  };
+  notifications?: {
+    taskCompletion?: boolean;
+    budgetThreshold?: boolean;
+    dailySummary?: boolean;
+    weeklyPdfSummary?: boolean;
+    criticalPathDelays?: boolean;
+  };
 }
 
 interface ProjectContextType {
@@ -304,7 +326,8 @@ export function ProjectProvider({ children, tenantId }: { children: ReactNode; t
         tasks: p.tasks || [],
         towers: p.towers || [],
         staff: p.staff || [],
-        financials: p.financials || []
+        financials: p.financials || [],
+        settings: p.settings || undefined
       }));
       setAllProjects(mapped);
       setSharedProjects(mapped);
@@ -381,6 +404,7 @@ export function ProjectProvider({ children, tenantId }: { children: ReactNode; t
     if (updates.towers !== undefined) dbPayload.towers = updates.towers;
     if (updates.staff !== undefined) dbPayload.staff = updates.staff;
     if (updates.financials !== undefined) dbPayload.financials = updates.financials;
+    if (updates.settings !== undefined) dbPayload.settings = updates.settings;
 
     try {
       await apiFetch(`/projects/${id}`, {

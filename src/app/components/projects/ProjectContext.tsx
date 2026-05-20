@@ -52,6 +52,28 @@ export interface Project {
   staff?: Staff[];
   financials?: FinancialQuarter[];
   towers?: Tower[];
+  settings?: ProjectSettings;
+}
+
+export interface ProjectSettings {
+  phase?: string;
+  currency?: string;
+  allowContractorsViewProgress?: boolean;
+  requireAdminApprovalBudget?: boolean;
+  enableClientPortalAccess?: boolean;
+  approvals?: {
+    naNocStatus?: 'approved' | 'pending';
+    buildingPlanStatus?: 'approved' | 'pending';
+    environmentalStatus?: 'approved' | 'pending';
+    fireSafetyStatus?: 'approved' | 'pending';
+  };
+  notifications?: {
+    taskCompletion?: boolean;
+    budgetThreshold?: boolean;
+    dailySummary?: boolean;
+    weeklyPdfSummary?: boolean;
+    criticalPathDelays?: boolean;
+  };
 }
 
 interface ProjectContextType {
@@ -81,7 +103,7 @@ const defaultProjects: Project[] = [
     completion: "Dec 2025",
     budget: "₹120 Cr",
     spent: "₹78 Cr",
-    image: "https://images.unsplash.com/photo-1758210784345-96fc36926234?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBjb25zdHJ1Y3Rpb258ZW58MXx8fHwxNzc5MTY5OTE5fDA&ixlib=rb-4.1.0&q=80&w=1080"
+    image: "https://images.unsplash.com/photo-1758210784345-96fc36926234?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBjb25zdHJ1Y3Rpb24lMjBidWlsZGluZyUyMGFyY2hpdGVjdHVyZSUyMGluZGlhfGVufDF8fHx8MTc3OTE2OTgxOXww&ixlib=rb-4.1.0&q=80&w=1080"
   },
   {
     id: "PRJ-002",
@@ -181,7 +203,17 @@ const getSharedProjects = (): Promise<Project[]> => {
     const cookieData = getCookieData(COOKIE_NAME);
     if (cookieData) {
       try {
-        resolve(JSON.parse(cookieData));
+        const parsed = JSON.parse(cookieData);
+        const cleaned = parsed.map((p: any) => {
+          const valB = parseFloat(String(p.budget).replace(/[^0-9.]/g, "")) || 0;
+          const valS = parseFloat(String(p.spent).replace(/[^0-9.]/g, "")) || 0;
+          return {
+            ...p,
+            budget: valB >= 100000 ? `₹${valB / 10000000} Cr` : String(p.budget || "₹0 Cr"),
+            spent: valS >= 100000 ? `₹${valS / 10000000} Cr` : String(p.spent || "₹0 Cr")
+          };
+        });
+        resolve(cleaned);
         return;
       } catch (e) {
         console.error("Error parsing projects from cookie:", e);
@@ -190,7 +222,25 @@ const getSharedProjects = (): Promise<Project[]> => {
 
     // 2. Fallback to localStorage
     const stored = localStorage.getItem("saas_projects");
-    resolve(stored ? JSON.parse(stored) : defaultProjects);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        const cleaned = parsed.map((p: any) => {
+          const valB = parseFloat(String(p.budget).replace(/[^0-9.]/g, "")) || 0;
+          const valS = parseFloat(String(p.spent).replace(/[^0-9.]/g, "")) || 0;
+          return {
+            ...p,
+            budget: valB >= 100000 ? `₹${valB / 10000000} Cr` : String(p.budget || "₹0 Cr"),
+            spent: valS >= 100000 ? `₹${valS / 10000000} Cr` : String(p.spent || "₹0 Cr")
+          };
+        });
+        resolve(cleaned);
+        return;
+      } catch (e) {
+        console.error("Error parsing projects from localStorage:", e);
+      }
+    }
+    resolve(defaultProjects);
   });
 };
 
@@ -257,18 +307,27 @@ export function ProjectProvider({ children, tenantId }: { children: ReactNode; t
         id: p.id,
         tenantId: p.tenantId || "shg-001",
         name: p.name,
-        rera: p.rera || "",
+        rera: p.reraNumber || p.rera || "",
         status: p.status || "Under Construction",
         progress: Number(p.progress || 0),
         location: p.location || "",
         completion: p.endDate ? new Date(p.endDate).toLocaleDateString() : "Dec 2025",
-        budget: typeof p.budget === "number" ? `₹${p.budget} Cr` : `₹${parseFloat(p.budget) || 0} Cr`,
-        spent: typeof p.spent === "number" ? `₹${p.spent} Cr` : `₹${parseFloat(p.spent) || 0} Cr`,
+        budget: (() => {
+          const num = typeof p.budget === "number" ? p.budget : parseFloat(p.budget) || 0;
+          const valInCr = num >= 100000 ? num / 10000000 : num;
+          return `₹${valInCr} Cr`;
+        })(),
+        spent: (() => {
+          const num = typeof p.spent === "number" ? p.spent : parseFloat(p.spent) || 0;
+          const valInCr = num >= 100000 ? num / 10000000 : num;
+          return `₹${valInCr} Cr`;
+        })(),
         image: p.image || "https://images.unsplash.com/photo-1758210784345-96fc36926234?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
         tasks: p.tasks || [],
         towers: p.towers || [],
         staff: p.staff || [],
-        financials: p.financials || []
+        financials: p.financials || [],
+        settings: p.settings || undefined
       }));
       setAllProjects(mapped);
       setSharedProjects(mapped);
@@ -287,8 +346,8 @@ export function ProjectProvider({ children, tenantId }: { children: ReactNode; t
   const projects = allProjects.filter(p => p.tenantId === activeTenantId);
 
   const addProject = async (projectData: Omit<Project, "id" | "tenantId"> & { subdomain?: string }) => {
-    const cleanBudget = parseFloat(projectData.budget.replace(/[^0-9.]/g, "")) || 0;
-    const cleanSpent = parseFloat(projectData.spent.replace(/[^0-9.]/g, "")) || 0;
+    const cleanBudget = (parseFloat(projectData.budget.replace(/[^0-9.]/g, "")) || 0) * 10000000;
+    const cleanSpent = (parseFloat(projectData.spent.replace(/[^0-9.]/g, "")) || 0) * 10000000;
     
     const dbPayload = {
       name: projectData.name,
@@ -339,12 +398,13 @@ export function ProjectProvider({ children, tenantId }: { children: ReactNode; t
     if (updates.rera !== undefined) dbPayload.rera = updates.rera;
     if (updates.status !== undefined) dbPayload.status = updates.status;
     if (updates.progress !== undefined) dbPayload.progress = Number(updates.progress);
-    if (updates.budget !== undefined) dbPayload.budget = parseFloat(String(updates.budget).replace(/[^0-9.]/g, "")) || 0;
-    if (updates.spent !== undefined) dbPayload.spent = parseFloat(String(updates.spent).replace(/[^0-9.]/g, "")) || 0;
+    if (updates.budget !== undefined) dbPayload.budget = (parseFloat(String(updates.budget).replace(/[^0-9.]/g, "")) || 0) * 10000000;
+    if (updates.spent !== undefined) dbPayload.spent = (parseFloat(String(updates.spent).replace(/[^0-9.]/g, "")) || 0) * 10000000;
     if (updates.tasks !== undefined) dbPayload.tasks = updates.tasks;
     if (updates.towers !== undefined) dbPayload.towers = updates.towers;
     if (updates.staff !== undefined) dbPayload.staff = updates.staff;
     if (updates.financials !== undefined) dbPayload.financials = updates.financials;
+    if (updates.settings !== undefined) dbPayload.settings = updates.settings;
 
     try {
       await apiFetch(`/projects/${id}`, {

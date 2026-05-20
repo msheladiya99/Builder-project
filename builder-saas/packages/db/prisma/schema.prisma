@@ -38,6 +38,7 @@ model Project {
   towers      Json?
   staff       Json?
   financials  Json?
+  settings    Json?
 }
 
 model User {
