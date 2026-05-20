@@ -93,6 +93,11 @@ export async function tenantResolver(req: Request, res: Response, next: NextFunc
       subdomain = headerTenant;
     }
     
+    // Map slugified 'hari-heritage' or 'hari-haritage' back to 'hariheights'
+    if (subdomain === "hari-heritage" || subdomain === "hari-haritage") {
+      subdomain = "hariheights";
+    }
+    
     // If no subdomain (could be main domain / public api), use the public schema
     if (!subdomain || subdomain === "localhost" || subdomain === "www") {
       req.db = dbMaster;

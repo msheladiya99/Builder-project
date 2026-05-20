@@ -216,6 +216,11 @@ const apiFetch = async (path: string, options: RequestInit = {}) => {
     tenantId = parts[0];
   }
 
+  // Remap hari-heritage and hari-haritage subdomains back to seeded tenant ID hariheights
+  if (tenantId === "hari-heritage" || tenantId === "hari-haritage") {
+    tenantId = "hariheights";
+  }
+
   const token = localStorage.getItem("auth_token") || "dev-bypass-token";
 
   const headers = {
@@ -240,7 +245,10 @@ const apiFetch = async (path: string, options: RequestInit = {}) => {
 
 export function ProjectProvider({ children, tenantId }: { children: ReactNode; tenantId?: string }) {
   const [allProjects, setAllProjects] = useState<Project[]>([]);
-  const activeTenantId = tenantId || "shg-001";
+  let activeTenantId = tenantId || "shg-001";
+  if (activeTenantId === "hari-heritage" || activeTenantId === "hari-haritage") {
+    activeTenantId = "hariheights";
+  }
 
   const loadProjects = async () => {
     try {
