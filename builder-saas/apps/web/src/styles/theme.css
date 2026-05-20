@@ -1,0 +1,230 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 14px;
+
+  /* SHG Brand Palette */
+  --shg-blue-50: #EEF3FF;
+  --shg-blue-100: #DBEAFE;
+  --shg-blue-200: #BFDBFE;
+  --shg-blue-300: #93C5FD;
+  --shg-blue-400: #4A7FD4;
+  --shg-blue-500: #2563EB;
+  --shg-blue-600: #1D4ED8;
+  --shg-blue-700: #1B3A6B;
+  --shg-blue-800: #142D54;
+  --shg-blue-900: #0F1F3D;
+
+  --shg-gold-50: #FFFBEB;
+  --shg-gold-100: #FEF3C7;
+  --shg-gold-200: #FDE68A;
+  --shg-gold-300: #FCD34D;
+  --shg-gold-400: #E8B64C;
+  --shg-gold-500: #D4A22A;
+  --shg-gold-600: #C9922A;
+  --shg-gold-700: #A87520;
+  --shg-gold-800: #7C5316;
+  --shg-gold-900: #5A3C0F;
+
+  /* Semantic tokens */
+  --background: #F4F6FA;
+  --foreground: #1E293B;
+  --card: #FFFFFF;
+  --card-foreground: #1E293B;
+  --popover: #FFFFFF;
+  --popover-foreground: #1E293B;
+  --primary: #1B3A6B;
+  --primary-foreground: #FFFFFF;
+  --secondary: #C9922A;
+  --secondary-foreground: #FFFFFF;
+  --muted: #EEF1F7;
+  --muted-foreground: #64748B;
+  --accent: #EEF3FF;
+  --accent-foreground: #1B3A6B;
+  --destructive: #DC2626;
+  --destructive-foreground: #FFFFFF;
+  --success: #16A34A;
+  --success-foreground: #FFFFFF;
+  --warning: #D97706;
+  --warning-foreground: #FFFFFF;
+  --info: #0369A1;
+  --info-foreground: #FFFFFF;
+  --border: #E2E8F0;
+  --input: #E2E8F0;
+  --input-background: #FFFFFF;
+  --switch-background: #CBD5E1;
+  --ring: #1B3A6B;
+
+  /* Sidebar */
+  --sidebar: #1B3A6B;
+  --sidebar-foreground: #E2E8F0;
+  --sidebar-primary: #C9922A;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: rgba(255, 255, 255, 0.08);
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --sidebar-ring: #4A7FD4;
+
+  /* Charts */
+  --chart-1: #1B3A6B;
+  --chart-2: #C9922A;
+  --chart-3: #16A34A;
+  --chart-4: #DC2626;
+  --chart-5: #0EA5E9;
+
+  --radius: 0.5rem;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+}
+
+.dark {
+  --background: #0D1523;
+  --foreground: #E2E8F0;
+  --card: #1A2B44;
+  --card-foreground: #E2E8F0;
+  --popover: #1A2B44;
+  --popover-foreground: #E2E8F0;
+  --primary: #4A7FD4;
+  --primary-foreground: #FFFFFF;
+  --secondary: #D4A540;
+  --secondary-foreground: #FFFFFF;
+  --muted: #152235;
+  --muted-foreground: #94A3B8;
+  --accent: #1E3352;
+  --accent-foreground: #93C5FD;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --success: #22C55E;
+  --success-foreground: #FFFFFF;
+  --warning: #F59E0B;
+  --warning-foreground: #FFFFFF;
+  --info: #38BDF8;
+  --info-foreground: #FFFFFF;
+  --border: #1E3352;
+  --input: #1E3352;
+  --input-background: #152235;
+  --switch-background: #334155;
+  --ring: #4A7FD4;
+
+  --sidebar: #0F1F3D;
+  --sidebar-foreground: #E2E8F0;
+  --sidebar-primary: #D4A540;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: rgba(255, 255, 255, 0.06);
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #4A7FD4;
+
+  --chart-1: #4A7FD4;
+  --chart-2: #D4A540;
+  --chart-3: #22C55E;
+  --chart-4: #EF4444;
+  --chart-5: #38BDF8;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 6px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  html {
+    font-size: var(--font-size);
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: -0.02em;
+  }
+
+  h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+  }
+
+  h3 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  h4 {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+  label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+  button {
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+  input, select, textarea {
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.5;
+  }
+}

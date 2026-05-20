@@ -1,0 +1,382 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ──────────────── MASTER TABLES (public schema) ────────────────
+
+model Company {
+  id            String         @id @default(uuid())
+  name          String
+  logo          String?
+  domain        String         @unique
+  plan          String         @default("growth") // starter, growth, enterprise
+  status        String         @default("active") // active, suspended
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  subscriptions Subscription[]
+}
+
+model Project {
+  id          String    @id @default(uuid())
+  name        String
+  location    String
+  rera        String?
+  status      String    @default("planning") // planning, active, delayed, completed
+  budget      Decimal   @default(0)
+  spent       Decimal   @default(0)
+  startDate   DateTime?
+  endDate     DateTime?
+  tenantId    String    // Subdomain matching
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model User {
+  id           String     @id @default(uuid())
+  name         String
+  email        String     @unique
+  passwordHash String
+  phone        String?
+  roleId       String
+  role         Role       @relation(fields: [roleId], references: [id])
+  tenantId     String?    // Null for Super Admins
+  status       String     @default("active") // active, inactive
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  auditLogs    AuditLog[]
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique // Super Admin, Project Admin, Accountant, Site Engineer, Sales Staff, Flat Owner
+  permissions String[]
+  users       User[]
+}
+
+model Subscription {
+  id        String   @id @default(uuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+  plan      String
+  status    String   @default("active")
+  startDate DateTime
+  endDate   DateTime
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  target    String
+  timestamp DateTime @default(now())
+  tenantId  String?
+}
+
+// ──────────────── TENANT TABLES (isolated schemas) ────────────────
+
+model Flat {
+  id               String            @id @default(uuid())
+  number           String
+  floor            Int
+  wing             String
+  type             String            // 1BHK, 2BHK, 3BHK, Shop etc.
+  status           String            @default("available") // available, booked, blocked, possession
+  price            Decimal
+  area             Decimal
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  flatOwners       FlatOwner[]
+  paymentSchedules PaymentSchedule[]
+}
+
+model FlatOwner {
+  id               String            @id @default(uuid())
+  flatId           String
+  flat             Flat              @relation(fields: [flatId], references: [id])
+  name             String
+  email            String
+  phone            String
+  pan              String?
+  aadhaar          String            // AES-256 encrypted
+  address          String
+  status           String            @default("active")
+  createdAt        DateTime          @default(now())
+  coApplicants     CoApplicant[]
+  documents        Document[]
+  paymentReceipts  PaymentReceipt[]
+  demandLetters    DemandLetter[]
+  loanDetails      LoanDetail[]
+  insurancePolicies InsurancePolicy[]
+  complaints       Complaint[]
+}
+
+model CoApplicant {
+  id           String    @id @default(uuid())
+  flatOwnerId  String
+  flatOwner    FlatOwner @relation(fields: [flatOwnerId], references: [id])
+  name         String
+  email        String
+  phone        String
+  relationship String
+  createdAt    DateTime  @default(now())
+}
+
+model Document {
+  id          String    @id @default(uuid())
+  flatOwnerId String
+  flatOwner   FlatOwner @relation(fields: [flatOwnerId], references: [id])
+  name        String
+  type        String    // Agreement, KYC, BankNOC
+  url         String
+  status      String    @default("pending") // pending, verified, rejected
+  verifiedAt  DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+model PaymentSchedule {
+  id            String   @id @default(uuid())
+  flatId        String
+  flat          Flat     @relation(fields: [flatId], references: [id])
+  milestoneName String
+  amount        Decimal
+  dueDate       DateTime
+  status        String   @default("pending") // pending, paid, partial
+}
+
+model PaymentReceipt {
+  id          String    @id @default(uuid())
+  flatOwnerId String
+  flatOwner   FlatOwner @relation(fields: [flatOwnerId], references: [id])
+  amount      Decimal
+  date        DateTime
+  mode        String    // NEFT, IMPS, UPI, Cheque
+  txId        String    @unique
+  status      String    @default("success") // success, pending, failed
+  pdfUrl      String?
+  createdAt   DateTime  @default(now())
+}
+
+model DemandLetter {
+  id          String    @id @default(uuid())
+  flatOwnerId String
+  flatOwner   FlatOwner @relation(fields: [flatOwnerId], references: [id])
+  amount      Decimal
+  dueDate     DateTime
+  issueDate   DateTime  @default(now())
+  status      String    @default("unpaid") // unpaid, paid, overdue
+  pdfUrl      String?
+}
+
+model LoanDetail {
+  id          String    @id @default(uuid())
+  flatOwnerId String
+  flatOwner   FlatOwner @relation(fields: [flatOwnerId], references: [id])
+  bankName    String
+  loanAmount  Decimal
+  status      String    @default("approved") // processing, approved, disbursed
+  branch      String?
+}
+
+model InsurancePolicy {
+  id          String    @id @default(uuid())
+  flatOwnerId String
+  flatOwner   FlatOwner @relation(fields: [flatOwnerId], references: [id])
+  company     String
+  policyNo    String    @unique
+  amount      Decimal
+  expiryDate  DateTime
+}
+
+model Vendor {
+  id               String            @id @default(uuid())
+  name             String
+  contact          String
+  gstin            String?
+  phone            String
+  address          String
+  purchaseOrders   PurchaseOrder[]
+  purchaseInvoices PurchaseInvoice[]
+}
+
+model PurchaseOrder {
+  id        String   @id @default(uuid())
+  vendorId  String
+  vendor    Vendor   @relation(fields: [vendorId], references: [id])
+  date      DateTime @default(now())
+  total     Decimal
+  status    String   @default("draft") // draft, sent, received, cancelled
+  grns      GRN[]
+}
+
+model GRN {
+  id              String        @id @default(uuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  date            DateTime      @default(now())
+  status          String        @default("pending") // pending, verified
+}
+
+model PurchaseInvoice {
+  id        String   @id @default(uuid())
+  vendorId  String
+  vendor    Vendor   @relation(fields: [vendorId], references: [id])
+  invoiceNo String   @unique
+  date      DateTime
+  amount    Decimal
+  gstAmount Decimal
+  total     Decimal
+  status    String   @default("unpaid") // unpaid, paid, partial
+}
+
+model MaterialStock {
+  id           String  @id @default(uuid())
+  materialName String  @unique
+  quantity     Decimal @default(0)
+  unit         String  // bags, MT, CFT, nos
+  minLevel     Decimal
+}
+
+model Worker {
+  id           String       @id @default(uuid())
+  name         String
+  trade        String       // Mason, Carpenter, Electrician, Plumber, Welder, Painter, Helper
+  dailyWage    Decimal
+  phone        String
+  aadhaar      String       // AES-256 encrypted
+  status       String       @default("active") // active, inactive
+  skills       String[]
+  tower        String?
+  contractorId String?
+  contractor   Contractor?  @relation(fields: [contractorId], references: [id])
+  createdAt    DateTime     @default(now())
+  attendance   Attendance[]
+  wagePayouts  WagePayout[]
+}
+
+model Attendance {
+  id        String   @id @default(uuid())
+  workerId  String
+  worker    Worker   @relation(fields: [workerId], references: [id])
+  date      DateTime
+  status    String   // present, absent, half-day, holiday
+  checkIn   String?
+  checkOut  String?
+  overtime  Decimal? @default(0)
+}
+
+model WagePayout {
+  id        String   @id @default(uuid())
+  workerId  String
+  worker    Worker   @relation(fields: [workerId], references: [id])
+  amount    Decimal
+  date      DateTime @default(now())
+  status    String   @default("processed") // processing, processed
+}
+
+model Contractor {
+  id           String  @id @default(uuid())
+  name         String
+  trade        String
+  workersCount Int     @default(0)
+  ratePerDay   Decimal
+  advance      Decimal @default(0)
+  totalPayable Decimal @default(0)
+  paid         Decimal @default(0)
+  status       String  @default("active") // active, closed
+  workers      Worker[]
+}
+
+model Expense {
+  id          String   @id @default(uuid())
+  category    String   // Materials, Labour, Admin, Utility
+  amount      Decimal
+  date        DateTime
+  description String?
+  status      String   @default("approved")
+}
+
+model JournalVoucher {
+  id        String   @id @default(uuid())
+  entryNo   String   @unique
+  date      DateTime
+  narration String
+}
+
+model Account {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  name      String
+  type      String   // Asset, Liability, Equity, Revenue, Expense
+  balance   Decimal  @default(0)
+}
+
+model FinancialYear {
+  id     String  @id @default(uuid())
+  year   String  @unique // e.g. FY 2025-26
+  status String  @default("active") // active, closed
+}
+
+model BOQItem {
+  id       String  @id @default(uuid())
+  name     String
+  quantity Decimal
+  unit     String
+  rate     Decimal
+  total    Decimal
+}
+
+model SiteDiary {
+  id           String   @id @default(uuid())
+  date         DateTime @default(now())
+  reporterName String
+  description  String
+}
+
+model SitePhoto {
+  id      String   @id @default(uuid())
+  url     String
+  caption String?
+  date    DateTime @default(now())
+}
+
+model Milestone {
+  id         String   @id @default(uuid())
+  name       String
+  targetDate DateTime
+  progress   Decimal  @default(0)
+}
+
+model Complaint {
+  id          String    @id @default(uuid())
+  title       String
+  flatOwnerId String
+  flatOwner   FlatOwner @relation(fields: [flatOwnerId], references: [id])
+  description String
+  status      String    @default("open") // open, in_progress, resolved
+  createdAt   DateTime  @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  type      String   // info, alert, success
+  status    String   @default("unread") // unread, read
+  date      DateTime @default(now())
+}
+
+model AlertLog {
+  id        String   @id @default(uuid())
+  type      String   // stock, rera, diary, payment
+  title     String
+  message   String
+  severity  String   // critical, high, medium
+  date      DateTime @default(now())
+}
