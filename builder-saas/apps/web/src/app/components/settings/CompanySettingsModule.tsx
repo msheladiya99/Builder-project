@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useCompanyStore } from "../../store/store";
 
 interface Props { isDark: boolean; }
 
@@ -51,6 +52,9 @@ export function CompanySettingsModule({ isDark }: Props) {
   const sub    = isDark ? "#94A3B8" : "#64748B";
   const input  = isDark ? "#0F172A" : "#F8FAFC";
 
+  // ── Company Store ─────────────────────────────────────────────────────────────
+  const { company, fetchCompany, updateCompany } = useCompanyStore();
+
   // ── Form state ───────────────────────────────────────────────────────────────
   const [companyName, setCompanyName]   = useState("Shri Hari Group Pvt. Ltd.");
   const [gstin, setGstin]               = useState("27AAFCS5678J1Z5");
@@ -69,9 +73,17 @@ export function CompanySettingsModule({ isDark }: Props) {
   const [email, setEmail]               = useState("info@shriharisgroup.com");
   const [website, setWebsite]           = useState("https://www.shriharisgroup.com");
   const [gstVerified, setGstVerified]   = useState(true);
+
+  // Bank Info
+  const [bankName, setBankName]         = useState("HDFC Bank Ltd.");
+  const [bankBranch, setBankBranch]     = useState("Andheri East, Mumbai");
+  const [bankAccount, setBankAccount]   = useState("50200078901234");
+  const [bankIfsc, setBankIfsc]         = useState("HDFC0001234");
+
   const [dirty, setDirty]               = useState(false);
   const [saving, setSaving]             = useState(false);
   const [saved, setSaved]               = useState(false);
+  const [error, setError]               = useState<string | null>(null);
 
   // ── Upload state ─────────────────────────────────────────────────────────────
   const [logoDrag, setLogoDrag]           = useState(false);
@@ -86,10 +98,88 @@ export function CompanySettingsModule({ isDark }: Props) {
 
   function mark() { setDirty(true); setSaved(false); }
 
-  function handleSave() {
+  // Load company data from DB on mount
+  useEffect(() => {
+    fetchCompany();
+  }, [fetchCompany]);
+
+  // Sync state values when company object is loaded/updated from store
+  useEffect(() => {
+    if (company) {
+      if (company.name) setCompanyName(company.name);
+      
+      const s = company.settings || {};
+      if (s.gstin) setGstin(s.gstin);
+      if (s.pan) setPan(s.pan);
+      if (s.cin) setCin(s.cin);
+      if (s.reraNo) setReraNo(s.reraNo);
+      if (s.reraExpiry) setReraExpiry(s.reraExpiry);
+      if (s.reraState) setReraState(s.reraState);
+      if (s.address1) setAddress1(s.address1);
+      if (s.address2) setAddress2(s.address2);
+      if (s.city) setCity(s.city);
+      if (s.state) setState(s.state);
+      if (s.pincode) setPincode(s.pincode);
+      if (s.mobile) setMobile(s.mobile);
+      if (s.altMobile) setAltMobile(s.altMobile);
+      if (s.email) setEmail(s.email);
+      if (s.website) setWebsite(s.website);
+      if (s.gstVerified !== undefined) setGstVerified(s.gstVerified);
+      
+      if (s.bankName) setBankName(s.bankName);
+      if (s.bankBranch) setBankBranch(s.bankBranch);
+      if (s.bankAccount) setBankAccount(s.bankAccount);
+      if (s.bankIfsc) setBankIfsc(s.bankIfsc);
+
+      if (s.logoUploaded !== undefined) setLogoUploaded(s.logoUploaded);
+      if (s.letterheadUploaded !== undefined) setLetterheadUploaded(s.letterheadUploaded);
+      if (s.signUploaded !== undefined) setSignUploaded(s.signUploaded);
+    }
+  }, [company]);
+
+  const handleSave = async () => {
     setSaving(true);
-    setTimeout(() => { setSaving(false); setSaved(true); setDirty(false); }, 1200);
-  }
+    setSaved(false);
+    setError(null);
+    try {
+      await updateCompany({
+        name: companyName,
+        settings: {
+          gstin,
+          pan,
+          cin,
+          reraNo,
+          reraExpiry,
+          reraState,
+          address1,
+          address2,
+          city,
+          state,
+          pincode,
+          mobile,
+          altMobile,
+          email,
+          website,
+          gstVerified,
+          bankName,
+          bankBranch,
+          bankAccount,
+          bankIfsc,
+          logoUploaded,
+          letterheadUploaded,
+          signUploaded
+        }
+      });
+      setSaved(true);
+      setDirty(false);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (e: any) {
+      console.error("Failed to save company settings:", e);
+      setError(e.message || "Failed to save company settings");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   function inp(value: string, setter: (v: string) => void, placeholder?: string, mono?: boolean) {
     return (
@@ -399,22 +489,22 @@ export function CompanySettingsModule({ isDark }: Props) {
             <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 12, padding: "20px 20px 4px" }}>
               <div style={inputGrid2}>
                 <Field label="Bank Name">
-                  {inp("HDFC Bank Ltd.", () => mark())}
+                  {inp(bankName, setBankName)}
                 </Field>
                 <Field label="Branch">
-                  {inp("Andheri East, Mumbai", () => mark())}
+                  {inp(bankBranch, setBankBranch)}
                 </Field>
               </div>
               <div style={inputGrid2}>
                 <Field label="Account Number" hint="Used on invoices and receipts">
                   <input
-                    type="password" defaultValue="50200078901234"
-                    onChange={mark}
+                    type="password" value={bankAccount}
+                    onChange={e => { setBankAccount(e.target.value); mark(); }}
                     style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: `1px solid ${border}`, background: input, color: txt, fontSize: 13, outline: "none", fontFamily: "monospace", boxSizing: "border-box" }}
                   />
                 </Field>
                 <Field label="IFSC Code">
-                  {inp("HDFC0001234", () => mark(), undefined, true)}
+                  {inp(bankIfsc, setBankIfsc, undefined, true)}
                 </Field>
               </div>
             </div>
@@ -441,6 +531,12 @@ export function CompanySettingsModule({ isDark }: Props) {
             <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#22C55E" }}>
               <span style={{ fontSize: 14 }}>✓</span>
               <span style={{ fontSize: 12, fontWeight: 600 }}>All changes saved</span>
+            </div>
+          )}
+          {error && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#EF4444" }}>
+              <span style={{ fontSize: 14 }}>⚠️</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "#EF4444" }}>{error}</span>
             </div>
           )}
           <div style={{ marginLeft: "auto", display: "flex", gap: 10 }}>

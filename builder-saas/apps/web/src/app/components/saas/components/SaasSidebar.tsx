@@ -5,6 +5,7 @@ import {
   ChevronDown, LogOut, Settings, HelpCircle, X, TrendingUp,
 } from "lucide-react";
 import { MODULE_GROUPS, currentTenant, currentUser, tenants } from "../saasData";
+import { useAuthStore } from "../../../store/store";
 
 type ModuleId = string;
 
@@ -48,7 +49,7 @@ export function SaasSidebar({ activeModule, onModuleChange, isDark, onClose, ten
 
       {/* Header */}
       <div style={S.header}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContext: "space-between" } as any}>
           <div style={S.logo}>
             <div style={S.logoIcon}>🏗️</div>
             <div>
@@ -186,7 +187,11 @@ export function SaasSidebar({ activeModule, onModuleChange, isDark, onClose, ten
             <p style={{ color: "#fff", fontSize: 11, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser.name}</p>
             <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 9 }}>{currentUser.role}</p>
           </div>
-          <button style={{ width: 24, height: 24, borderRadius: 6, background: "rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center" }} className="active:opacity-60 transition-opacity">
+          <button 
+            onClick={() => useAuthStore.getState().logout()}
+            style={{ width: 24, height: 24, borderRadius: 6, background: "rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }} 
+            className="active:opacity-60 transition-opacity"
+          >
             <LogOut size={11} color="rgba(255,255,255,0.3)" />
           </button>
         </div>

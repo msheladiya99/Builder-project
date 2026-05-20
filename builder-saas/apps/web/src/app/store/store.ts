@@ -334,3 +334,36 @@ export const useAccountingStore = create<any>((set) => ({
     }
   }
 }));
+
+// ── COMPANY STORE ──
+export const useCompanyStore = create<any>((set) => ({
+  company: null,
+  loading: false,
+  error: null,
+
+  fetchCompany: async () => {
+    set({ loading: true });
+    try {
+      const data = await apiRequest("/company");
+      set({ company: data, loading: false });
+      return data;
+    } catch (err: any) {
+      set({ error: err.message, loading: false });
+    }
+  },
+
+  updateCompany: async (companyData: any) => {
+    set({ loading: true });
+    try {
+      const data = await apiRequest("/company", {
+        method: "PUT",
+        body: JSON.stringify(companyData)
+      });
+      set({ company: data, loading: false });
+      return data;
+    } catch (err: any) {
+      set({ error: err.message, loading: false });
+      throw err;
+    }
+  }
+}));

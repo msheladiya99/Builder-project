@@ -1,10 +1,11 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import dotenv from "dotenv";
 import { tenantResolver } from "./middleware/tenant.middleware";
 import { authenticate, authorize } from "./middleware/auth.middleware";
 
+import { dbMaster } from "@builder/db";
 // Controllers
 import * as authCtrl from "./controllers/auth.controller";
 import * as projectsCtrl from "./controllers/projects.controller";
@@ -13,8 +14,6 @@ import * as inventoryCtrl from "./controllers/inventory.controller";
 import * as labourCtrl from "./controllers/labour.controller";
 import * as accountingCtrl from "./controllers/accounting.controller";
 import * as pdfCtrl from "./controllers/pdf.controller";
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -30,6 +29,12 @@ app.use(cors({
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 
+// Request logger middleware
+app.use((req, res, next) => {
+  console.log(`[API] ${req.method} ${req.url} - Tenant header: ${req.headers["x-tenant-id"] || "none"}`);
+  next();
+});
+
 // Resolve isolated tenant database clients dynamically on all routes
 app.use(tenantResolver);
 
@@ -41,6 +46,51 @@ app.get("/api/health", (req, res) => {
     schema: req.tenantSchema,
     timestamp: new Date()
   });
+});
+
+// ── COMPANY SETTINGS ──
+app.get("/api/company", authenticate, async (req, res) => {
+  try {
+    let company = await dbMaster.company.findFirst();
+    if (!company) {
+      company = await dbMaster.company.create({
+        data: {
+          name: "Shri Hari Group Pvt. Ltd.",
+          domain: "shrihari.in",
+          logo: "SH",
+          plan: "enterprise",
+          status: "active",
+          settings: {}
+        }
+      });
+    }
+    return res.json(company);
+  } catch (error) {
+    console.error("Failed to fetch company settings:", error);
+    return res.status(500).json({ error: "Failed to fetch company settings." });
+  }
+});
+
+app.put("/api/company", authenticate, authorize(["Super Admin"]), async (req, res) => {
+  try {
+    const { name, logo, settings } = req.body;
+    const company = await dbMaster.company.findFirst();
+    if (!company) {
+      return res.status(404).json({ error: "Company not found." });
+    }
+    const updated = await dbMaster.company.update({
+      where: { id: company.id },
+      data: {
+        name: name !== undefined ? name : company.name,
+        logo: logo !== undefined ? logo : company.logo,
+        settings: settings !== undefined ? settings : company.settings
+      }
+    });
+    return res.json(updated);
+  } catch (error) {
+    console.error("Failed to update company settings:", error);
+    return res.status(500).json({ error: "Failed to update company settings." });
+  }
 });
 
 // ── AUTH MODULE ──
