@@ -181,7 +181,17 @@ const getSharedProjects = (): Promise<Project[]> => {
     const cookieData = getCookieData(COOKIE_NAME);
     if (cookieData) {
       try {
-        resolve(JSON.parse(cookieData));
+        const parsed = JSON.parse(cookieData);
+        const cleaned = parsed.map((p: any) => {
+          const valB = parseFloat(String(p.budget).replace(/[^0-9.]/g, "")) || 0;
+          const valS = parseFloat(String(p.spent).replace(/[^0-9.]/g, "")) || 0;
+          return {
+            ...p,
+            budget: valB >= 100000 ? `₹${valB / 10000000} Cr` : String(p.budget || "₹0 Cr"),
+            spent: valS >= 100000 ? `₹${valS / 10000000} Cr` : String(p.spent || "₹0 Cr")
+          };
+        });
+        resolve(cleaned);
         return;
       } catch (e) {
         console.error("Error parsing projects from cookie:", e);
@@ -190,7 +200,25 @@ const getSharedProjects = (): Promise<Project[]> => {
 
     // 2. Fallback to localStorage
     const stored = localStorage.getItem("saas_projects");
-    resolve(stored ? JSON.parse(stored) : defaultProjects);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        const cleaned = parsed.map((p: any) => {
+          const valB = parseFloat(String(p.budget).replace(/[^0-9.]/g, "")) || 0;
+          const valS = parseFloat(String(p.spent).replace(/[^0-9.]/g, "")) || 0;
+          return {
+            ...p,
+            budget: valB >= 100000 ? `₹${valB / 10000000} Cr` : String(p.budget || "₹0 Cr"),
+            spent: valS >= 100000 ? `₹${valS / 10000000} Cr` : String(p.spent || "₹0 Cr")
+          };
+        });
+        resolve(cleaned);
+        return;
+      } catch (e) {
+        console.error("Error parsing projects from localStorage:", e);
+      }
+    }
+    resolve(defaultProjects);
   });
 };
 
@@ -262,8 +290,16 @@ export function ProjectProvider({ children, tenantId }: { children: ReactNode; t
         progress: Number(p.progress || 0),
         location: p.location || "",
         completion: p.endDate ? new Date(p.endDate).toLocaleDateString() : "Dec 2025",
-        budget: typeof p.budget === "number" ? `₹${p.budget} Cr` : `₹${parseFloat(p.budget) || 0} Cr`,
-        spent: typeof p.spent === "number" ? `₹${p.spent} Cr` : `₹${parseFloat(p.spent) || 0} Cr`,
+        budget: (() => {
+          const num = typeof p.budget === "number" ? p.budget : parseFloat(p.budget) || 0;
+          const valInCr = num >= 100000 ? num / 10000000 : num;
+          return `₹${valInCr} Cr`;
+        })(),
+        spent: (() => {
+          const num = typeof p.spent === "number" ? p.spent : parseFloat(p.spent) || 0;
+          const valInCr = num >= 100000 ? num / 10000000 : num;
+          return `₹${valInCr} Cr`;
+        })(),
         image: p.image || "https://images.unsplash.com/photo-1758210784345-96fc36926234?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
         tasks: p.tasks || [],
         towers: p.towers || [],
@@ -287,8 +323,8 @@ export function ProjectProvider({ children, tenantId }: { children: ReactNode; t
   const projects = allProjects.filter(p => p.tenantId === activeTenantId);
 
   const addProject = async (projectData: Omit<Project, "id" | "tenantId"> & { subdomain?: string }) => {
-    const cleanBudget = parseFloat(projectData.budget.replace(/[^0-9.]/g, "")) || 0;
-    const cleanSpent = parseFloat(projectData.spent.replace(/[^0-9.]/g, "")) || 0;
+    const cleanBudget = (parseFloat(projectData.budget.replace(/[^0-9.]/g, "")) || 0) * 10000000;
+    const cleanSpent = (parseFloat(projectData.spent.replace(/[^0-9.]/g, "")) || 0) * 10000000;
     
     const dbPayload = {
       name: projectData.name,
@@ -339,8 +375,8 @@ export function ProjectProvider({ children, tenantId }: { children: ReactNode; t
     if (updates.rera !== undefined) dbPayload.rera = updates.rera;
     if (updates.status !== undefined) dbPayload.status = updates.status;
     if (updates.progress !== undefined) dbPayload.progress = Number(updates.progress);
-    if (updates.budget !== undefined) dbPayload.budget = parseFloat(String(updates.budget).replace(/[^0-9.]/g, "")) || 0;
-    if (updates.spent !== undefined) dbPayload.spent = parseFloat(String(updates.spent).replace(/[^0-9.]/g, "")) || 0;
+    if (updates.budget !== undefined) dbPayload.budget = (parseFloat(String(updates.budget).replace(/[^0-9.]/g, "")) || 0) * 10000000;
+    if (updates.spent !== undefined) dbPayload.spent = (parseFloat(String(updates.spent).replace(/[^0-9.]/g, "")) || 0) * 10000000;
     if (updates.tasks !== undefined) dbPayload.tasks = updates.tasks;
     if (updates.towers !== undefined) dbPayload.towers = updates.towers;
     if (updates.staff !== undefined) dbPayload.staff = updates.staff;

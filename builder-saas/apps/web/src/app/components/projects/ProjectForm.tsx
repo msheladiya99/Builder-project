@@ -15,6 +15,16 @@ export function ProjectForm({ mode, projectId, onNavigate }: ProjectFormProps) {
   
   const existingProject = mode === "edit" && projectId ? getProject(projectId) : null;
 
+  const parseCr = (str: string | undefined | null) => {
+    if (!str) return 0;
+    const cleanStr = str.replace(/[^0-9.]/g, "");
+    const val = parseFloat(cleanStr) || 0;
+    if (val >= 100000) {
+      return val / 10000000;
+    }
+    return val;
+  };
+
   const [formData, setFormData] = useState({
     name: existingProject?.name || "",
     subdomain: existingProject?.tenantId || "",
@@ -24,7 +34,9 @@ export function ProjectForm({ mode, projectId, onNavigate }: ProjectFormProps) {
     startDate: existingProject?.startDate || "",
     endDate: existingProject?.endDate || "",
     manager: existingProject?.manager || "",
-    description: existingProject?.description || ""
+    description: existingProject?.description || "",
+    budget: existingProject ? parseCr(existingProject.budget) : 0,
+    spent: existingProject ? parseCr(existingProject.spent) : 0
   });
 
   const [isSubdomainManual, setIsSubdomainManual] = useState(false);
@@ -70,8 +82,8 @@ export function ProjectForm({ mode, projectId, onNavigate }: ProjectFormProps) {
         description: formData.description,
         progress: 0,
         completion: formData.endDate ? new Date(formData.endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : "TBD",
-        budget: "₹0 Cr",
-        spent: "₹0 Cr",
+        budget: `₹${formData.budget} Cr`,
+        spent: `₹${formData.spent} Cr`,
         image: "https://images.unsplash.com/photo-1483094035713-218a81c0d971?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxnbGFzcyUyMGZhY2FkZSUyMGJ1aWxkaW5nJTIwdW5kZXIlMjBjb25zdHJ1Y3Rpb258ZW58MXx8fHwxNzc5MTY5ODIyfDA&ixlib=rb-4.1.0&q=80&w=1080"
       });
       onNavigate("listing");
@@ -86,6 +98,8 @@ export function ProjectForm({ mode, projectId, onNavigate }: ProjectFormProps) {
         endDate: formData.endDate,
         manager: formData.manager,
         description: formData.description,
+        budget: `₹${formData.budget} Cr`,
+        spent: `₹${formData.spent} Cr`,
       });
       onNavigate("overview", projectId);
     }
@@ -269,10 +283,54 @@ export function ProjectForm({ mode, projectId, onNavigate }: ProjectFormProps) {
             </div>
           </section>
 
-          {/* Staff Assignment */}
+          {/* Financials */}
           <section>
             <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
               <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs">4</span>
+              Financial Details (in Crores)
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-8">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-foreground">Total Budget (Cr)</label>
+                <div className="flex">
+                  <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-border bg-muted text-muted-foreground text-xs font-semibold">
+                    ₹
+                  </span>
+                  <input 
+                    type="number"
+                    name="budget"
+                    value={formData.budget}
+                    onChange={handleChange}
+                    className="w-full bg-background border border-border rounded-r-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
+                    placeholder="e.g. 120"
+                    step="0.01"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-foreground">Amount Spent (Cr)</label>
+                <div className="flex">
+                  <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-border bg-muted text-muted-foreground text-xs font-semibold">
+                    ₹
+                  </span>
+                  <input 
+                    type="number"
+                    name="spent"
+                    value={formData.spent}
+                    onChange={handleChange}
+                    className="w-full bg-background border border-border rounded-r-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
+                    placeholder="e.g. 78"
+                    step="0.01"
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Staff Assignment */}
+          <section>
+            <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs">5</span>
               Staff Assignment
             </h3>
             <div className="pl-8">
@@ -296,7 +354,7 @@ export function ProjectForm({ mode, projectId, onNavigate }: ProjectFormProps) {
           {/* Gallery */}
           <section>
             <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs">5</span>
+              <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs">6</span>
               Project Gallery
             </h3>
             <div className="pl-8">
