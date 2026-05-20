@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { AdminSidebar } from "./AdminSidebar";
 import { ProjectManagementModule } from "../projects/ProjectManagementModule";
+import { useAuthStore } from "../../store/store";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -352,7 +353,13 @@ function AdminNavbar({ onMenuToggle, isDark, onDarkToggle, onCollapse, collapsed
                 </button>
               ))}
               <div className="border-t border-border">
-                <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
+                <button 
+                  onClick={() => {
+                    setUserOpen(false);
+                    useAuthStore.getState().logout();
+                  }}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                >
                   <X size={13} /> Sign out
                 </button>
               </div>

@@ -3,6 +3,7 @@ import {
   Menu, Search, Bell, Sun, Moon, ChevronDown,
   Building2, Settings, LogOut, User, HelpCircle
 } from "lucide-react";
+import { useAuthStore } from "../store/store";
 
 interface NavbarProps {
   onMenuToggle: () => void;
@@ -152,7 +153,13 @@ export function Navbar({ onMenuToggle, isDark, onDarkToggle, activeSection }: Na
                 </button>
               ))}
               <div className="border-t border-border mt-1">
-                <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
+                <button 
+                  onClick={() => {
+                    setUserOpen(false);
+                    useAuthStore.getState().logout();
+                  }}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                >
                   <LogOut size={14} />
                   Sign out
                 </button>

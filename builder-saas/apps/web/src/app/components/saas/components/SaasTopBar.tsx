@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Menu, Search, Bell, Sun, Moon, ChevronDown, LogOut, Settings, User } from "lucide-react";
 import { currentUser, currentTenant } from "../saasData";
+import { useAuthStore } from "../../../store/store";
 
 interface Props {
   onMenuToggle: () => void;
@@ -114,7 +115,14 @@ export function SaasTopBar({ onMenuToggle, isDark, onDarkToggle, activeLabel, un
                     <span style={{ fontSize: 12, color: text, fontWeight: 600 }}>{label}</span>
                   </button>
                 ))}
-                <button onClick={() => setUserOpen(false)} className="w-full text-left active:opacity-70 transition-opacity" style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 14px" }}>
+                <button 
+                  onClick={() => {
+                    setUserOpen(false);
+                    useAuthStore.getState().logout();
+                  }} 
+                  className="w-full text-left active:opacity-70 transition-opacity" 
+                  style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 14px" }}
+                >
                   <LogOut size={13} color="#EF4444" />
                   <span style={{ fontSize: 12, color: "#EF4444", fontWeight: 700 }}>Sign Out</span>
                 </button>

@@ -72,10 +72,17 @@ async function main() {
   ];
 
   for (const p of projects) {
-    const project = await prisma.project.create({
-      data: p
+    const existing = await prisma.project.findFirst({
+      where: { tenantId: p.tenantId, name: p.name }
     });
-    console.log(`Project ${project.name} created.`);
+    if (!existing) {
+      const project = await prisma.project.create({
+        data: p
+      });
+      console.log(`Project ${project.name} created.`);
+    } else {
+      console.log(`Project ${p.name} already exists.`);
+    }
   }
 
   // 4. Users

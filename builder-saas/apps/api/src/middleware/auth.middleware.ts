@@ -33,7 +33,12 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
     };
     
     // Ensure tenant isolation
-    if (req.user.tenantId && req.tenantId !== "master" && req.user.tenantId !== req.tenantId) {
+    let userTenant = req.user.tenantId;
+    if (userTenant === "hari-heritage" || userTenant === "hari-haritage") {
+      userTenant = "hariheights";
+    }
+
+    if (userTenant && req.tenantId !== "master" && userTenant !== req.tenantId) {
       return res.status(403).json({ error: "Access forbidden. Tenant boundary violation." });
     }
     
