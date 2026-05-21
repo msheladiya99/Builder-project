@@ -14,8 +14,11 @@ const Fallback = () => (
 );
 
 export function MultiTenantRouter() {
-  const [hostname, setHostname] = useState(window.location.hostname);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [hostname] = useState(window.location.hostname);
+  // Initialize from localStorage so session persists across page refresh
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    () => !!localStorage.getItem("auth_token")
+  );
 
   // Multi-tenant subdomain detection logic
   const parts = hostname.split(".");
@@ -33,20 +36,32 @@ export function MultiTenantRouter() {
     subdomain = parts[0];
   }
 
+  function handleLogin(token: string, user: object) {
+    localStorage.setItem("auth_token", token);
+    localStorage.setItem("auth_user", JSON.stringify(user));
+    setIsAuthenticated(true);
+  }
+
+  function handleLogout() {
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("auth_user");
+    setIsAuthenticated(false);
+  }
+
   // If we are on the main domain (Super Admin)
   if (!isTenant) {
     if (!isAuthenticated) {
       return (
         <Suspense fallback={<Fallback />}>
           <div className="relative">
-             {/* Dev-only bypass button */}
+            {/* Dev-only bypass button */}
             <button 
-              onClick={() => setIsAuthenticated(true)}
+              onClick={() => handleLogin("dev-bypass-token", { role: "Super Admin", email: "admin@shrihari.in" })}
               className="fixed top-4 right-4 z-50 bg-red-500 text-white text-xs px-3 py-1.5 rounded shadow-lg opacity-50 hover:opacity-100"
             >
               Bypass Auth (Dev)
             </button>
-            <AuthPage defaultScreen="super-admin" onLogin={() => setIsAuthenticated(true)} />
+            <AuthPage defaultScreen="super-admin" onLogin={() => handleLogin("super-admin-token", { role: "Super Admin", email: "admin@shrihari.in" })} />
           </div>
         </Suspense>
       );
@@ -65,15 +80,15 @@ export function MultiTenantRouter() {
       return (
         <Suspense fallback={<Fallback />}>
           <div className="relative h-screen bg-[#111827]">
-             {/* Dev-only bypass button */}
+            {/* Dev-only bypass button */}
             <button 
-              onClick={() => setIsAuthenticated(true)}
+              onClick={() => handleLogin("dev-bypass-tenant-token", { role: "Project Admin", tenantId: subdomain, email: "user@hariheights.in" })}
               className="fixed top-4 right-4 z-50 bg-emerald-500 text-white text-xs px-3 py-1.5 rounded shadow-lg opacity-50 hover:opacity-100"
             >
               Bypass Tenant Auth (Dev)
             </button>
             {/* The AuthPage contains the 'subdomain' screen ui */}
-            <AuthPage defaultScreen="subdomain" onLogin={() => setIsAuthenticated(true)} />
+            <AuthPage defaultScreen="subdomain" onLogin={() => handleLogin("tenant-token", { role: "Project Admin", tenantId: subdomain, email: "user@hariheights.in" })} />
           </div>
         </Suspense>
       );
@@ -82,7 +97,7 @@ export function MultiTenantRouter() {
     // Render the main ERP App for tenants directly, not the Design System App
     return (
       <Suspense fallback={<Fallback />}>
-        <SaasPlatform isStandalone={true} tenantId={subdomain} onExit={() => {}} />
+        <SaasPlatform isStandalone={true} tenantId={subdomain} onExit={handleLogout} />
       </Suspense>
     );
   }

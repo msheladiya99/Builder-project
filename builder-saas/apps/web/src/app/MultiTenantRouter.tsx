@@ -42,12 +42,22 @@ export function MultiTenantRouter() {
           <div className="relative">
              {/* Dev-only bypass button */}
             <button 
-              onClick={() => useAuthStore.setState({ isAuthenticated: true, user: { role: "Super Admin", email: "admin@shrihari.in" } })}
+              onClick={() => {
+                localStorage.setItem("auth_token", "dev-bypass-token");
+                localStorage.setItem("auth_user", JSON.stringify({ role: "Super Admin", email: "admin@shrihari.in" }));
+                useAuthStore.setState({ isAuthenticated: true, token: "dev-bypass-token", user: { role: "Super Admin", email: "admin@shrihari.in" } });
+              }}
               className="fixed top-4 right-4 z-50 bg-red-500 text-white text-xs px-3 py-1.5 rounded shadow-lg opacity-50 hover:opacity-100"
             >
               Bypass Auth (Dev)
             </button>
-            <AuthPage defaultScreen="super-admin" onLogin={() => useAuthStore.setState({ isAuthenticated: true })} />
+            <AuthPage defaultScreen="super-admin" onLogin={() => {
+              // Ensure we persist even if the default login didn't handle it for some reason
+              if (!localStorage.getItem("auth_token")) {
+                localStorage.setItem("auth_token", "dev-bypass-token");
+              }
+              useAuthStore.setState({ isAuthenticated: true });
+            }} />
           </div>
         </Suspense>
       );
@@ -68,13 +78,22 @@ export function MultiTenantRouter() {
           <div className="relative h-screen bg-[#111827]">
              {/* Dev-only bypass button */}
             <button 
-              onClick={() => useAuthStore.setState({ isAuthenticated: true, user: { role: "Project Admin", tenantId: subdomain, email: "user@hariheights.in" } })}
+              onClick={() => {
+                localStorage.setItem("auth_token", "dev-bypass-tenant-token");
+                localStorage.setItem("auth_user", JSON.stringify({ role: "Project Admin", tenantId: subdomain, email: "user@hariheights.in" }));
+                useAuthStore.setState({ isAuthenticated: true, token: "dev-bypass-tenant-token", user: { role: "Project Admin", tenantId: subdomain, email: "user@hariheights.in" } });
+              }}
               className="fixed top-4 right-4 z-50 bg-emerald-500 text-white text-xs px-3 py-1.5 rounded shadow-lg opacity-50 hover:opacity-100"
             >
               Bypass Tenant Auth (Dev)
             </button>
             {/* The AuthPage contains the 'subdomain' screen ui */}
-            <AuthPage defaultScreen="subdomain" onLogin={() => useAuthStore.setState({ isAuthenticated: true })} />
+            <AuthPage defaultScreen="subdomain" onLogin={() => {
+              if (!localStorage.getItem("auth_token")) {
+                localStorage.setItem("auth_token", "dev-bypass-tenant-token");
+              }
+              useAuthStore.setState({ isAuthenticated: true });
+            }} />
           </div>
         </Suspense>
       );

@@ -68,7 +68,7 @@ export function SaasDashboard({ isDark, onNavigate, tenantId }: Props) {
 
   return (
     <div style={{ flex: 1, overflow: "hidden auto", background: bg }}>
-      <div style={{ padding: "20px 24px", maxWidth: 1400, margin: "0 auto" }}>
+      <div style={{ padding: "20px 24px" }}>
 
         {/* Welcome banner */}
         <div style={{ background: "linear-gradient(135deg, #0A1628 0%, #1B3A6B 60%, #2563EB 100%)", borderRadius: 20, padding: "20px 24px", marginBottom: 20, position: "relative", overflow: "hidden" }}>
