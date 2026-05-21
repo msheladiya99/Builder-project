@@ -93,12 +93,8 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ activeItem, onItemSelect, collapsed, isMobileOpen, onMobileClose, activeTenant, onTenantChange }: AdminSidebarProps) {
   const [expanded, setExpanded] = useState<string[]>(["Projects", "Sales"]);
-  const currentTenant = activeTenant || "SHG Central";
-
   const toggle = (label: string) =>
     setExpanded(prev => prev.includes(label) ? prev.filter(l => l !== label) : [...prev, label]);
-
-  const tenants = ["SHG Central", "Hari Heights Division", "Green Valley Projects"];
 
   return (
     <>
@@ -137,19 +133,19 @@ export function AdminSidebar({ activeItem, onItemSelect, collapsed, isMobileOpen
           )}
         </div>
 
-        {/* Tenant selector */}
+        {/* Fixed org display — Shri Hari Group */}
         {!collapsed && (
           <div className="px-3 py-2.5 border-b border-white/6">
             <label className="text-[9px] font-bold uppercase tracking-widest text-white/25 block mb-1.5">Active Tenant</label>
-            <div className="relative">
-              <select
-                value={currentTenant}
-                onChange={e => onTenantChange?.(e.target.value)}
-                className="w-full appearance-none bg-white/6 border border-white/10 rounded-lg px-3 py-2 text-xs text-white/70 outline-none cursor-pointer hover:bg-white/10 transition-colors pr-6"
-              >
-                {tenants.map(t => <option key={t} value={t} className="bg-[#0B1829] text-white">{t}</option>)}
-              </select>
-              <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
+            <div className="flex items-center gap-2.5 bg-white/6 border border-white/10 rounded-lg px-3 py-2">
+              <div className="w-6 h-6 rounded-md bg-gradient-to-br from-[#C9922A] to-[#E8B64C] flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-[9px] font-black">SHG</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-white text-[11px] font-bold truncate">Shri Hari Group</p>
+                <p className="text-white/30 text-[9px]">Enterprise Plan · Pune</p>
+              </div>
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" title="Active" />
             </div>
           </div>
         )}

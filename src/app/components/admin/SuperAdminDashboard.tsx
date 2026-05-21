@@ -794,7 +794,8 @@ export function SuperAdminDashboard({ isDark, onDarkToggle }: { isDark: boolean;
   const [activeItem, setActiveItem] = useState("Dashboard");
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [tenant, setTenant] = useState("SHG Central");
+  // Fixed tenant: Shri Hari Group
+  const TENANT_ID = "shg-001";
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -804,8 +805,7 @@ export function SuperAdminDashboard({ isDark, onDarkToggle }: { isDark: boolean;
         collapsed={collapsed}
         isMobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
-        activeTenant={tenant}
-        onTenantChange={setTenant}
+        activeTenant="Shri Hari Group"
       />
 
       <div className="flex-1 flex flex-col min-h-screen min-w-0 overflow-hidden">
@@ -825,7 +825,7 @@ export function SuperAdminDashboard({ isDark, onDarkToggle }: { isDark: boolean;
               isDark={isDark} 
               onDarkToggle={onDarkToggle} 
               initialView={activeItem === "Add Project" ? "create" : "listing"}
-              tenantId={tenant === "Hari Heights Division" ? "hariheights" : tenant === "Green Valley Projects" ? "kmb-002" : "shg-001"} 
+              tenantId={TENANT_ID}
             />
           ) : (
             /* Placeholder for other sections */
