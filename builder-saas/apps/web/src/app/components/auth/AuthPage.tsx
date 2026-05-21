@@ -410,7 +410,7 @@ function LoginScreen({ onNavigate, onLogin }: { onNavigate: (s: Screen) => void;
   const [error, setError] = useState("");
   const [emailErr, setEmailErr] = useState("");
   const [passErr, setPassErr] = useState("");
-  const login = useAuthStore(state => state.login);
+  const login = useAuthStore((state: any) => state.login);
 
   const validate = () => {
     let ok = true;
@@ -779,7 +779,7 @@ function SubdomainScreen({ onNavigate, onLogin }: { onNavigate: (s: Screen) => v
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const login = useAuthStore(state => state.login);
+  const login = useAuthStore((state: any) => state.login);
   const submit = async () => {
     if (!email || !password) { setError("Please fill in all fields"); return; }
     setError(""); setLoading(true);
@@ -918,7 +918,7 @@ function SuperAdminScreen({ onNavigate, onLogin }: { onNavigate: (s: Screen) => 
   const [error, setError] = useState("");
   const [step, setStep] = useState<"creds" | "2fa">("creds");
 
-  const login = useAuthStore(state => state.login);
+  const login = useAuthStore((state: any) => state.login);
   const submitCreds = async () => {
     if (!username || !password) { setError("All fields are required"); return; }
     setError(""); setLoading(true);

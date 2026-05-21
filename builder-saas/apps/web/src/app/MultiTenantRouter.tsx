@@ -16,7 +16,7 @@ const Fallback = () => (
 
 export function MultiTenantRouter() {
   const [hostname, setHostname] = useState(window.location.hostname);
-  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const isAuthenticated = useAuthStore((state: any) => state.isAuthenticated);
 
   // Multi-tenant subdomain detection logic
   const parts = hostname.split(".");

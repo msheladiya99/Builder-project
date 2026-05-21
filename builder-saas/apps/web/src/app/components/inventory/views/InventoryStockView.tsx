@@ -259,7 +259,7 @@ export function InventoryStockView({ site }: Props) {
               </tr>
             </thead>
             <tbody className="divide-y divide-border/50">
-              {filteredItems.map(item => {
+              {filteredItems.map((item: any) => {
                 const health = stockHealth(item.currentStock, item.minStock, item.maxStock);
                 const hc = healthConfig[health];
                 return (
@@ -307,7 +307,7 @@ export function InventoryStockView({ site }: Props) {
                   {filteredItems.length} items shown
                 </td>
                 <td className="px-3 py-3 text-right text-xs font-black text-foreground">
-                  {fmtINR(filteredItems.reduce((s, i) => s + i.value, 0), true)}
+                  {fmtINR(filteredItems.reduce((s: number, i: any) => s + i.value, 0), true)}
                 </td>
                 <td />
               </tr>

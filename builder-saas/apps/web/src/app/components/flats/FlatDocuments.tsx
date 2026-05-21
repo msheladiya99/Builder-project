@@ -1,7 +1,8 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   ArrowLeft, FileText, Upload, Download, Eye, CheckCircle,
-  AlertCircle, FolderOpen, Search, File, Home
+  AlertCircle, FolderOpen, Search, File, Home,
+  Clock, XCircle, Shield, IndianRupee, Stamp, Image
 } from "lucide-react";
 import { mockFlats, mockDocuments, statusConfig, type FlatDocument } from "./flatData";
 import type { FlatView } from "./FlatManagementModule";
@@ -13,7 +14,7 @@ interface FlatDocumentsProps {
 
 type DocStatus = FlatDocument["status"];
 
-const statusConf: Record<DocStatus, { icon: (props: { size: number; className?: string }) => JSX.Element; color: string; bg: string; border: string; label: string }> = {
+const statusConf: Record<DocStatus, { icon: (props: { size: number; className?: string }) => React.JSX.Element; color: string; bg: string; border: string; label: string }> = {
   Verified:  { icon: CheckCircle, color: "text-success",     bg: "bg-success/10",     border: "border-success/30",     label: "Verified" },
   Uploaded:  { icon: Clock,       color: "text-warning",     bg: "bg-warning/10",     border: "border-warning/30",     label: "Under Review" },
   Pending:   { icon: AlertCircle, color: "text-muted-foreground", bg: "bg-muted",     border: "border-border",         label: "Pending Upload" },
@@ -29,7 +30,7 @@ const categories = [
   { key: "NOC", icon: FileText, label: "NOC / Clearance" },
 ];
 
-const fileTypeIcon: Record<string, (props: { size: number; className?: string }) => JSX.Element> = {
+const fileTypeIcon: Record<string, (props: { size: number; className?: string }) => React.JSX.Element> = {
   PDF: File,
   JPG: Image,
   PNG: Image,

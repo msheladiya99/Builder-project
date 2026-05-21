@@ -1,8 +1,8 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   ArrowLeft, Search, UserCheck, User, CreditCard,
   CheckCircle, AlertCircle, Plus,
-  Edit2, Calendar
+  Edit2, Calendar, Clock, XCircle
 } from "lucide-react";
 import { mockFlats, mockCustomers, statusConfig, fmt, type Customer } from "./flatData";
 import type { FlatView } from "./FlatManagementModule";
@@ -12,7 +12,7 @@ interface OwnerAssignmentProps {
   onNavigate: (view: FlatView, flatId?: string) => void;
 }
 
-const kycIcon: Record<Customer["kycStatus"], (props: { size: number; className?: string }) => JSX.Element> = {
+const kycIcon: Record<Customer["kycStatus"], (props: { size: number; className?: string }) => React.JSX.Element> = {
   Verified: CheckCircle,
   Pending: Clock,
   Rejected: XCircle,
