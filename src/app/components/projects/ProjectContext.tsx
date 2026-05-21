@@ -87,6 +87,7 @@ interface ProjectContextType {
   addTower: (projectId: string, tower: Omit<Tower, "id">) => void;
   updateTower: (projectId: string, towerId: string, updates: Partial<Tower>) => void;
   deleteTower: (projectId: string, towerId: string) => void;
+  deleteProject: (id: string) => void;
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
@@ -470,8 +471,20 @@ export function ProjectProvider({ children, tenantId }: { children: ReactNode; t
     updateProject(projectId, { towers: updatedTowers });
   };
 
+  const deleteProject = async (id: string) => {
+    const updated = allProjects.filter(p => p.id !== id);
+    setAllProjects(updated);
+    setSharedProjects(updated);
+    try {
+      await apiFetch(`/projects/${id}`, { method: "DELETE" });
+      await loadProjects();
+    } catch (err) {
+      console.error("Failed to delete project in DB:", err);
+    }
+  };
+
   return (
-    <ProjectContext.Provider value={{ projects, addProject, updateProject, getProject, addTask, updateTaskStage, addStaff, addTower, updateTower, deleteTower }}>
+    <ProjectContext.Provider value={{ projects, addProject, updateProject, getProject, addTask, updateTaskStage, addStaff, addTower, updateTower, deleteTower, deleteProject }}>
       {children}
     </ProjectContext.Provider>
   );

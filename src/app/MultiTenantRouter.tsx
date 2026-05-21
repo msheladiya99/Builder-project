@@ -1,5 +1,6 @@
 import { useState, useEffect, Suspense, lazy } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router";
+import { useAuthStore } from "./store/store";
 
 // Lazy load the components
 const AuthPage = lazy(() => import("./components/auth/AuthPage").then(m => ({ default: m.AuthPage })));
@@ -39,12 +40,14 @@ export function MultiTenantRouter() {
   function handleLogin(token: string, user: object) {
     localStorage.setItem("auth_token", token);
     localStorage.setItem("auth_user", JSON.stringify(user));
+    useAuthStore.setState({ user, token, isAuthenticated: true });
     setIsAuthenticated(true);
   }
 
   function handleLogout() {
     localStorage.removeItem("auth_token");
     localStorage.removeItem("auth_user");
+    useAuthStore.setState({ user: null, token: "", isAuthenticated: false });
     setIsAuthenticated(false);
   }
 

@@ -1,7 +1,9 @@
-import { Building2, Search, Filter, Plus, MapPin, Calendar, Users, MoreHorizontal, ArrowUpRight, CheckCircle2, Activity } from "lucide-react";
+import { Building2, Search, Filter, Plus, MapPin, Calendar, Users, MoreHorizontal, ArrowUpRight, CheckCircle2, Activity, Trash2 } from "lucide-react";
 import { ProjectView } from "./ProjectManagementModule";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useProjects } from "./ProjectContext";
+import { useState } from "react";
+import { currentUser } from "../saas/saasData";
 
 interface ProjectListingProps {
   onNavigate: (view: ProjectView, projectId?: string) => void;
@@ -17,7 +19,31 @@ const data = [
 ];
 
 export function ProjectListing({ onNavigate }: ProjectListingProps) {
-  const { projects } = useProjects();
+  const { projects, deleteProject } = useProjects();
+  const isSuperAdmin = currentUser?.role === "Super Admin";
+
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; projectId: string | null }>({ isOpen: false, projectId: null });
+  const [securityCode, setSecurityCode] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+
+  const handleDeleteClick = (projectId: string) => {
+    setActiveMenu(null);
+    setDeleteModal({ isOpen: true, projectId });
+    setSecurityCode("");
+    setDeleteError("");
+  };
+
+  const confirmDelete = () => {
+    if (securityCode !== "DELETE") {
+      setDeleteError("Invalid security code");
+      return;
+    }
+    if (deleteModal.projectId) {
+      deleteProject(deleteModal.projectId);
+      setDeleteModal({ isOpen: false, projectId: null });
+    }
+  };
   
   return (
     <div className="space-y-6 pb-20">
@@ -138,9 +164,36 @@ export function ProjectListing({ onNavigate }: ProjectListingProps) {
                         )}
                       </div>
                     </div>
-                    <button className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted">
-                      <MoreHorizontal size={16} />
-                    </button>
+                    <div className="relative">
+                      <button 
+                        className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveMenu(activeMenu === project.id ? null : project.id);
+                        }}
+                      >
+                        <MoreHorizontal size={16} />
+                      </button>
+                      {activeMenu === project.id && (
+                        <>
+                          <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setActiveMenu(null); }} />
+                          <div className="absolute right-0 top-8 w-40 bg-card border border-border rounded-lg shadow-lg z-20 py-1 overflow-hidden" onClick={e => e.stopPropagation()}>
+                            <button className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors">
+                              Edit Details
+                            </button>
+                            {isSuperAdmin && (
+                              <button 
+                                onClick={() => handleDeleteClick(project.id)}
+                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-500/10 transition-colors"
+                              >
+                                <Trash2 size={14} />
+                                Delete Project
+                              </button>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                   
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
@@ -225,6 +278,40 @@ export function ProjectListing({ onNavigate }: ProjectListingProps) {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-md p-6 shadow-2xl">
+            <h3 className="text-lg font-bold text-foreground mb-2">Delete Project</h3>
+            <p className="text-sm text-muted-foreground mb-6">
+              This action cannot be undone. Please type <strong className="text-foreground">DELETE</strong> to confirm.
+            </p>
+            <input
+              type="text"
+              value={securityCode}
+              onChange={(e) => setSecurityCode(e.target.value)}
+              placeholder="Enter security code"
+              className="w-full bg-background border border-border rounded-lg px-4 py-2 mb-2 text-sm text-foreground focus:outline-none focus:border-red-500"
+            />
+            {deleteError && <p className="text-xs text-red-500 mb-4">{deleteError}</p>}
+            <div className="flex items-center justify-end gap-3 mt-6">
+              <button
+                onClick={() => setDeleteModal({ isOpen: false, projectId: null })}
+                className="px-4 py-2 text-sm font-medium text-foreground bg-muted hover:bg-muted/80 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+              >
+                Confirm Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
