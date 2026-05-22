@@ -14,6 +14,7 @@ import * as inventoryCtrl from "./controllers/inventory.controller";
 import * as labourCtrl from "./controllers/labour.controller";
 import * as accountingCtrl from "./controllers/accounting.controller";
 import * as pdfCtrl from "./controllers/pdf.controller";
+import * as superadminCtrl from "./controllers/superadmin.controller";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -92,6 +93,9 @@ app.put("/api/company", authenticate, authorize(["Super Admin"]), async (req, re
     return res.status(500).json({ error: "Failed to update company settings." });
   }
 });
+
+// ── SUPER ADMIN MODULE ──
+app.post("/api/super-admin/companies", authenticate, authorize(["Super Admin"]), superadminCtrl.createCompany);
 
 // ── AUTH MODULE ──
 app.post("/api/auth/login", authCtrl.login);

@@ -13,6 +13,7 @@ import {
 import { AdminSidebar } from "./AdminSidebar";
 import { ProjectManagementModule } from "../projects/ProjectManagementModule";
 import { useAuthStore } from "../../store/store";
+import { toast } from "sonner";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -371,9 +372,153 @@ function AdminNavbar({ onMenuToggle, isDark, onDarkToggle, onCollapse, collapsed
   );
 }
 
+// ─── Create Company Modal ─────────────────────────────────────────────────────
+function CreateCompanyModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const [formData, setFormData] = useState({
+    name: "",
+    domain: "",
+    adminEmail: "",
+    adminPassword: "",
+    plan: "growth"
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const { token } = useAuthStore.getState();
+      const res = await fetch("http://localhost:3000/api/super-admin/companies", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(formData)
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to create company");
+      
+      toast.success("Company Created", {
+        description: `Successfully provisioned ${formData.name}. Portal: ${data.loginUrl}`
+      });
+      onClose();
+    } catch (err: any) {
+      toast.error("Error", { description: err.message });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-card border border-border w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/30">
+          <h2 className="text-lg font-bold text-foreground">Provision New Company</h2>
+          <button onClick={onClose} className="p-1.5 text-muted-foreground hover:bg-muted rounded-lg transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-foreground">Company Name</label>
+            <input
+              required
+              type="text"
+              placeholder="e.g. Shri Hari Group"
+              className="w-full text-sm bg-muted border border-border rounded-xl px-4 py-2.5 outline-none focus:border-primary transition-colors text-foreground placeholder:text-muted-foreground"
+              value={formData.name}
+              onChange={e => {
+                const name = e.target.value;
+                const domain = name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+                setFormData(f => ({ ...f, name, domain }));
+              }}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-foreground">Subdomain (Tenant ID)</label>
+            <div className="relative flex items-center">
+              <input
+                required
+                type="text"
+                placeholder="shri-hari-group"
+                className="w-full text-sm bg-muted border border-border rounded-xl pl-4 pr-32 py-2.5 outline-none focus:border-primary transition-colors text-foreground"
+                value={formData.domain}
+                onChange={e => setFormData(f => ({ ...f, domain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') }))}
+              />
+              <span className="absolute right-4 text-xs font-medium text-muted-foreground pointer-events-none">
+                .shrihari.in
+              </span>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1">This will be the unique portal URL for the client.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">Admin Email</label>
+              <input
+                required
+                type="email"
+                placeholder="admin@company.com"
+                className="w-full text-sm bg-muted border border-border rounded-xl px-4 py-2.5 outline-none focus:border-primary transition-colors text-foreground"
+                value={formData.adminEmail}
+                onChange={e => setFormData(f => ({ ...f, adminEmail: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">Admin Password</label>
+              <input
+                required
+                type="password"
+                placeholder="••••••••"
+                className="w-full text-sm bg-muted border border-border rounded-xl px-4 py-2.5 outline-none focus:border-primary transition-colors text-foreground"
+                value={formData.adminPassword}
+                onChange={e => setFormData(f => ({ ...f, adminPassword: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-foreground">Subscription Plan</label>
+            <select
+              className="w-full text-sm bg-muted border border-border rounded-xl px-4 py-2.5 outline-none focus:border-primary transition-colors text-foreground cursor-pointer appearance-none"
+              value={formData.plan}
+              onChange={e => setFormData(f => ({ ...f, plan: e.target.value }))}
+            >
+              <option value="starter">Starter Plan (Up to 2 Projects)</option>
+              <option value="growth">Growth Plan (Up to 5 Projects)</option>
+              <option value="enterprise">Enterprise Plan (Unlimited)</option>
+            </select>
+          </div>
+          
+          <div className="pt-4 border-t border-border flex items-center justify-end gap-3 mt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2 text-sm font-semibold text-foreground hover:bg-muted rounded-xl transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-6 py-2 bg-primary text-primary-foreground text-sm font-bold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {isSubmitting ? "Provisioning..." : "Provision Company"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Dashboard Content ───────────────────────────────────────────────────
 function DashboardContent() {
   const [bookingsTab, setBookingsTab] = useState("All");
+  const [isCreateCompanyOpen, setIsCreateCompanyOpen] = useState(false);
 
   return (
     <div className="p-5 space-y-6 max-w-[1600px] mx-auto">
@@ -395,11 +540,18 @@ function DashboardContent() {
           <button className="flex items-center gap-1.5 border border-border text-xs font-medium px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">
             <Filter size={13} /> Filters
           </button>
-          <button className="flex items-center gap-1.5 bg-primary text-primary-foreground text-xs font-semibold px-3 py-2 rounded-lg hover:opacity-90 transition-all shadow-sm">
-            <Download size={13} /> Export Report
+          <button className="flex items-center gap-1.5 border border-border text-xs font-medium px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">
+            <Download size={13} /> Export
+          </button>
+          <button 
+            onClick={() => setIsCreateCompanyOpen(true)}
+            className="flex items-center gap-1.5 bg-primary text-primary-foreground text-xs font-semibold px-3 py-2 rounded-lg hover:opacity-90 transition-all shadow-sm">
+            <Plus size={13} /> Create Firm
           </button>
         </div>
       </div>
+
+      <CreateCompanyModal isOpen={isCreateCompanyOpen} onClose={() => setIsCreateCompanyOpen(false)} />
 
       {/* Alert banner */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">

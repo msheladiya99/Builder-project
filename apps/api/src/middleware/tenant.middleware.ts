@@ -128,12 +128,17 @@ export async function tenantResolver(req: Request, res: Response, next: NextFunc
     const project = await dbMaster.project.findFirst({
       where: { tenantId: subdomain }
     });
+    
+    const company = await dbMaster.company.findFirst({
+      where: { domain: subdomain }
+    });
 
-    if (!project && !["POST", "PUT", "PATCH"].includes(req.method)) {
+    if (!project && !company && !["POST", "PUT", "PATCH"].includes(req.method)) {
       // For read requests to an unknown tenant, return 404 with a clear message
       // but only if it really looks like an invalid tenant (no matching records)
       const projectCount = await dbMaster.project.count({ where: { tenantId: subdomain } });
-      if (projectCount === 0) {
+      const companyCount = await dbMaster.company.count({ where: { domain: subdomain } });
+      if (projectCount === 0 && companyCount === 0) {
         return res.status(404).json({ error: `Tenant workspace '${subdomain}' not found. Please check the subdomain.` });
       }
     }
