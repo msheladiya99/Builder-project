@@ -13,6 +13,10 @@ interface ProjectFormProps {
 export function ProjectForm({ mode, projectId, onNavigate }: ProjectFormProps) {
   const { addProject, updateProject, getProject } = useProjects();
   
+  const isLocal = window.location.hostname.includes("localhost");
+  const baseDomain = isLocal ? `localhost:${window.location.port || "5173"}` : "mycafile.xyz";
+  const protocol = isLocal ? "http" : "https";
+  
   const existingProject = mode === "edit" && projectId ? getProject(projectId) : null;
 
   const parseCr = (str: string | undefined | null) => {
@@ -157,18 +161,18 @@ export function ProjectForm({ mode, projectId, onNavigate }: ProjectFormProps) {
                     placeholder="e.g. elegance"
                   />
                   <span className="inline-flex items-center px-3 rounded-r-lg border border-l-0 border-border bg-muted text-muted-foreground text-xs font-semibold">
-                    .localhost
+                    .{isLocal ? "localhost" : "mycafile.xyz"}
                   </span>
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-1">
                   Workspace URL:{" "}
                   <a 
-                    href={`http://${formData.subdomain || "subdomain"}.localhost:${window.location.port || "5173"}/saas`} 
+                    href={`${protocol}://${formData.subdomain || "subdomain"}.${baseDomain}/saas`} 
                     target="_blank" 
                     rel="noreferrer" 
                     className="font-semibold text-primary hover:underline"
                   >
-                    http://{formData.subdomain || "subdomain"}.localhost:{window.location.port || "5173"}/saas
+                    {protocol}://{formData.subdomain || "subdomain"}.{baseDomain}/saas
                   </a>
                 </p>
               </div>

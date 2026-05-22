@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { currentUser } from "../saas/saasData";
 
 export interface Task {
   id: string;
@@ -344,7 +345,8 @@ export function ProjectProvider({ children, tenantId }: { children: ReactNode; t
     return () => clearInterval(interval);
   }, []);
 
-  const projects = allProjects.filter(p => p.tenantId === activeTenantId);
+  const isSuperAdmin = currentUser?.role === "Super Admin";
+  const projects = isSuperAdmin ? allProjects : allProjects.filter(p => p.tenantId === activeTenantId);
 
   const addProject = async (projectData: Omit<Project, "id" | "tenantId"> & { subdomain?: string }) => {
     const cleanBudget = (parseFloat(projectData.budget.replace(/[^0-9.]/g, "")) || 0) * 10000000;

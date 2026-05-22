@@ -743,7 +743,7 @@ function TwoFactorScreen({ onNavigate }: { onNavigate: (s: Screen) => void }) {
 }
 
 // ── 6. Subdomain Login ────────────────────────────────────────────────────────
-function SubdomainScreen({ onNavigate, onLogin }: { onNavigate: (s: Screen) => void, onLogin?: () => void }) {
+function SubdomainScreen({ onNavigate, onLogin, subdomain }: { onNavigate: (s: Screen) => void, onLogin?: () => void, subdomain?: string }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -755,12 +755,16 @@ function SubdomainScreen({ onNavigate, onLogin }: { onNavigate: (s: Screen) => v
     await new Promise(r => setTimeout(r, 1000));
     setLoading(false); 
     
-    if (email === "user@hariheights.in" && password === "password123") {
+    if (email === `user@${displayDomain}.in` && password === "password123") {
       if (onLogin) onLogin();
     } else {
-      setError("Invalid credentials for this workspace.");
+      setError("Invalid credentials for this workspace. Hint: use user@" + displayDomain + ".in / password123");
     }
   };
+
+  const displayDomain = subdomain || "hariheights";
+  const displayName = subdomain ? subdomain.charAt(0).toUpperCase() + subdomain.slice(1).replace(/-/g, " ") : "Hari Heights";
+  const baseDomain = window.location.hostname.includes("localhost") ? "localhost" : "mycafile.xyz";
 
   return (
     <div className="space-y-5">
@@ -768,7 +772,7 @@ function SubdomainScreen({ onNavigate, onLogin }: { onNavigate: (s: Screen) => v
       <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-2">
         <Globe size={13} className="text-emerald-400 flex-shrink-0" />
         <span className="text-xs font-mono text-white/40">
-          <span className="text-emerald-400 font-semibold">hariheights</span>.shrihari.in/login
+          <span className="text-emerald-400 font-semibold">{displayDomain}</span>.{baseDomain}/login
         </span>
         <div className="ml-auto flex items-center gap-1">
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
@@ -783,7 +787,7 @@ function SubdomainScreen({ onNavigate, onLogin }: { onNavigate: (s: Screen) => v
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <p className="text-white font-bold text-lg">Hari Heights</p>
+            <p className="text-white font-bold text-lg">{displayName}</p>
             <span className="text-[10px] bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 px-2 py-0.5 rounded-full font-semibold">RERA Approved</span>
           </div>
           <p className="text-white/40 text-xs">Koramangala, Bengaluru · 240 Units</p>
@@ -794,7 +798,7 @@ function SubdomainScreen({ onNavigate, onLogin }: { onNavigate: (s: Screen) => v
       {error && <Banner type="error" message={error} />}
 
       <div className="space-y-4">
-        <GlassInput label="Work email" type="email" placeholder="you@hariheights.in" value={email} onChange={setEmail} icon={<Mail size={15} />} />
+        <GlassInput label="Work email" type="email" placeholder={`you@${displayDomain}.in`} value={email} onChange={setEmail} icon={<Mail size={15} />} />
         <GlassInput label="Password" type="password" placeholder="Your workspace password" value={password} onChange={setPassword} icon={<Lock size={15} />} />
       </div>
 
@@ -998,7 +1002,7 @@ const SCREENS: { key: Screen; label: string; badge?: string }[] = [
   { key: "super-admin", label: "Super Admin", badge: "Admin" },
 ];
 
-export function AuthPage({ defaultScreen = "login", onLogin }: { defaultScreen?: Screen, onLogin?: () => void }) {
+export function AuthPage({ defaultScreen = "login", onLogin, subdomain }: { defaultScreen?: Screen, onLogin?: () => void, subdomain?: string }) {
   const [screen, setScreen] = useState<Screen>(defaultScreen);
   const layout = getLayout(screen);
   const overlay = getOverlay(screen);
@@ -1012,7 +1016,7 @@ export function AuthPage({ defaultScreen = "login", onLogin }: { defaultScreen?:
       case "forgot-password": return <ForgotPasswordScreen {...props} />;
       case "reset-password": return <ResetPasswordScreen {...props} />;
       case "two-factor": return <TwoFactorScreen {...props} />;
-      case "subdomain": return <SubdomainScreen {...props} />;
+      case "subdomain": return <SubdomainScreen {...props} subdomain={subdomain} />;
       case "owner-portal": return <OwnerPortalScreen {...props} />;
       case "super-admin": return <SuperAdminScreen {...props} />;
     }

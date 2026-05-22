@@ -88,7 +88,7 @@ export function MultiTenantRouter() {
               Bypass Tenant Auth (Dev)
             </button>
             {/* The AuthPage contains the 'subdomain' screen ui */}
-            <AuthPage defaultScreen="subdomain" onLogin={() => {
+            <AuthPage defaultScreen="subdomain" subdomain={subdomain} onLogin={() => {
               if (!localStorage.getItem("auth_token")) {
                 localStorage.setItem("auth_token", "dev-bypass-tenant-token");
               }
