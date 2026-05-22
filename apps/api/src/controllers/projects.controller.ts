@@ -1,6 +1,21 @@
 import { Request, Response } from "express";
 import { dbMaster } from "@builder/db";
 
+// BUG-15 fix: Normalize status string to consistent Title Case
+// Handles any casing: "planning" -> "Planning", "UNDER CONSTRUCTION" -> "Under Construction"
+const STATUS_MAP: Record<string, string> = {
+  "planning": "Planning",
+  "approvals pending": "Approvals Pending",
+  "under construction": "Under Construction",
+  "completed": "Completed",
+  "handover": "Handover",
+};
+function normalizeStatus(raw?: string): string {
+  if (!raw) return "Planning";
+  const lower = raw.trim().toLowerCase();
+  return STATUS_MAP[lower] || (raw.charAt(0).toUpperCase() + raw.slice(1));
+}
+
 // Fetch projects for the active tenant
 export async function getProjects(req: Request, res: Response) {
   try {
@@ -26,7 +41,7 @@ export async function getProjects(req: Request, res: Response) {
 // Create a project (Master operation)
 export async function createProject(req: Request, res: Response) {
   try {
-    const { name, location, rera, budget, spent, startDate, endDate } = req.body;
+    const { name, location, rera, budget, spent, startDate, endDate, status } = req.body;
     const tenantId = req.tenantId === "master" ? req.body.tenantId || "shg-001" : req.tenantId;
 
     if (!name || !location) {
@@ -40,6 +55,8 @@ export async function createProject(req: Request, res: Response) {
         rera,
         budget: Number(budget || 0),
         spent: Number(spent || 0),
+        // BUG-15 fix: store normalized status
+        status: normalizeStatus(status),
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null,
         tenantId
@@ -68,7 +85,9 @@ export async function updateProject(req: Request, res: Response) {
       return res.status(403).json({ error: "Access forbidden. Project tenant mismatch." });
     }
 
-    // Convert decimal-convertible fields
+    // BUG-15 fix: Normalize status before saving
+    if (updates.status !== undefined) updates.status = normalizeStatus(updates.status);
+    // Convert numeric fields
     if (updates.budget !== undefined) updates.budget = Number(updates.budget);
     if (updates.spent !== undefined) updates.spent = Number(updates.spent);
     if (updates.startDate) updates.startDate = new Date(updates.startDate);
