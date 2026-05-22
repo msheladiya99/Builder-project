@@ -11,7 +11,9 @@
   "dependencies": {
     "@builder/db": "workspace:*",
     "@builder/types": "workspace:*",
+    "@types/bcryptjs": "^3.0.0",
     "bcrypt": "^5.1.1",
+    "bcryptjs": "^3.0.3",
     "bullmq": "^5.8.2",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
