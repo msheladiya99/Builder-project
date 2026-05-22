@@ -120,13 +120,22 @@ export async function tenantResolver(req: Request, res: Response, next: NextFunc
     req.db = getTenantClient(schemaName);
     
     // 3. Verify tenant database / schema is provisioned or active
-    // We do a quick connection check or lookup on the master database
+    // We do a quick connection check or lookup on the master database.
+    // NOTE: We do NOT block unknown tenants at this point — a Super Admin can create
+    // new projects with new tenantIds and they should be immediately accessible.
+    // Only reject if this is a non-master request accessing a completely unknown tenant
+    // AND the request is not a write operation (POST/PUT) that would create the tenant.
     const project = await dbMaster.project.findFirst({
       where: { tenantId: subdomain }
     });
-    
-    if (!project && subdomain !== "shg-001" && subdomain !== "hariheights" && subdomain !== "kmb-002") {
-      return res.status(404).json({ error: `Tenant project '${subdomain}' not found or deactivated.` });
+
+    if (!project && !["POST", "PUT", "PATCH"].includes(req.method)) {
+      // For read requests to an unknown tenant, return 404 with a clear message
+      // but only if it really looks like an invalid tenant (no matching records)
+      const projectCount = await dbMaster.project.count({ where: { tenantId: subdomain } });
+      if (projectCount === 0) {
+        return res.status(404).json({ error: `Tenant workspace '${subdomain}' not found. Please check the subdomain.` });
+      }
     }
     
     next();

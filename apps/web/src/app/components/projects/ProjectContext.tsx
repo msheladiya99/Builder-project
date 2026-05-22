@@ -295,7 +295,8 @@ const apiFetch = async (path: string, options: RequestInit = {}) => {
 
 export function ProjectProvider({ children, tenantId }: { children: ReactNode; tenantId?: string }) {
   const [allProjects, setAllProjects] = useState<Project[]>([]);
-  let activeTenantId = tenantId || "shg-001";
+  // "master" means Super Admin — no tenantId filter, show all projects
+  let activeTenantId = tenantId || "master";
   if (activeTenantId === "hari-heritage" || activeTenantId === "hari-haritage") {
     activeTenantId = "hariheights";
   }
@@ -338,17 +339,24 @@ export function ProjectProvider({ children, tenantId }: { children: ReactNode; t
   };
 
   useEffect(() => {
+    // Clear stale local cache on every mount so the API is always the source of truth
+    localStorage.removeItem("saas_projects");
     loadProjects();
-    const interval = setInterval(loadProjects, 2000);
+    const interval = setInterval(loadProjects, 30000); // poll every 30s
     return () => clearInterval(interval);
   }, []);
 
-  const projects = allProjects.filter(p => p.tenantId === activeTenantId);
+  // Super Admin (master) sees ALL projects; tenants see only their own
+  const projects = activeTenantId === "master"
+    ? allProjects
+    : allProjects.filter(p => p.tenantId === activeTenantId);
 
   const addProject = async (projectData: Omit<Project, "id" | "tenantId"> & { subdomain?: string }) => {
-    const cleanBudget = (parseFloat(projectData.budget.replace(/[^0-9.]/g, "")) || 0) * 10000000;
-    const cleanSpent = (parseFloat(projectData.spent.replace(/[^0-9.]/g, "")) || 0) * 10000000;
-    
+    const cleanBudget = (parseFloat(String(projectData.budget).replace(/[^0-9.]/g, "")) || 0) * 10000000;
+    const cleanSpent = (parseFloat(String(projectData.spent).replace(/[^0-9.]/g, "")) || 0) * 10000000;
+    // For Super Admin (master), use the subdomain provided in the form; otherwise use the active tenant
+    const projectTenantId = projectData.subdomain || (activeTenantId !== "master" ? activeTenantId : "shg-001");
+
     const dbPayload = {
       name: projectData.name,
       location: projectData.location,
@@ -356,33 +364,37 @@ export function ProjectProvider({ children, tenantId }: { children: ReactNode; t
       budget: cleanBudget,
       spent: cleanSpent,
       status: projectData.status || "planning",
-      tenantId: projectData.subdomain || activeTenantId,
+      tenantId: projectTenantId,
+    };
+
+    // Optimistically add to local state immediately so the listing updates at once
+    const optimisticProject: Project = {
+      ...projectData,
+      id: "PRJ-OPT-" + Date.now(),
+      tenantId: projectTenantId,
       tasks: [],
       towers: [],
       staff: [],
       financials: []
     };
+    const optimistic = [...allProjects, optimisticProject];
+    setAllProjects(optimistic);
 
     try {
       await apiFetch("/projects", {
         method: "POST",
         body: JSON.stringify(dbPayload)
       });
+      // Refresh from server to replace optimistic entry with real DB id
       await loadProjects();
     } catch (err) {
       console.error("Failed to save project to DB, falling back to cookies:", err);
-      const newProject: Project = {
-        ...projectData,
-        id: "PRJ-" + Math.floor(Math.random() * 10000).toString().padStart(4, "0"),
-        tenantId: projectData.subdomain || activeTenantId,
-        tasks: [],
-        towers: [],
-        staff: [],
-        financials: []
-      };
-      const updated = [...allProjects, newProject];
-      setAllProjects(updated);
-      setSharedProjects(updated);
+      // Keep the optimistic entry with a proper local id
+      const fallback = optimistic.map(p =>
+        p.id === optimisticProject.id ? { ...p, id: "PRJ-" + Math.floor(Math.random() * 10000).toString().padStart(4, "0") } : p
+      );
+      setAllProjects(fallback);
+      setSharedProjects(fallback);
     }
   };
 

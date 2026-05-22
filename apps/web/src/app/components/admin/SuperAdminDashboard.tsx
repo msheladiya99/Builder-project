@@ -832,7 +832,12 @@ export function SuperAdminDashboard({ isDark, onDarkToggle }: { isDark: boolean;
               isDark={isDark} 
               onDarkToggle={onDarkToggle} 
               initialView={activeItem === "Add Project" ? "create" : "listing"}
-              tenantId={tenant === "Hari Heights Division" ? "hariheights" : tenant === "Green Valley Projects" ? "kmb-002" : "shg-001"} 
+              tenantId={
+                tenant === "Hari Heights Division" ? "hariheights" 
+                : tenant === "Green Valley Projects" ? "kmb-002"
+                : tenant === "SHG Central" ? undefined  // master → show ALL projects
+                : "shg-001"
+              } 
             />
           ) : (
             /* Placeholder for other sections */
