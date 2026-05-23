@@ -48,6 +48,14 @@ export async function createProject(req: Request, res: Response) {
       return res.status(400).json({ error: "Name and location are required." });
     }
 
+    // Ensure unique subdomain (tenantId)
+    const existingProject = await dbMaster.project.findFirst({ where: { tenantId } });
+    const existingCompany = await dbMaster.company.findFirst({ where: { domain: tenantId } });
+
+    if (existingProject || existingCompany) {
+      return res.status(400).json({ error: `The subdomain '${tenantId}' is already in use. Please choose a unique subdomain.` });
+    }
+
     const project = await dbMaster.project.create({
       data: {
         name,
@@ -83,6 +91,16 @@ export async function updateProject(req: Request, res: Response) {
 
     if (req.tenantId !== "master" && project.tenantId !== req.tenantId) {
       return res.status(403).json({ error: "Access forbidden. Project tenant mismatch." });
+    }
+
+    // Ensure unique subdomain if it's being updated
+    if (updates.tenantId && updates.tenantId !== project.tenantId) {
+      const existingProject = await dbMaster.project.findFirst({ where: { tenantId: updates.tenantId } });
+      const existingCompany = await dbMaster.company.findFirst({ where: { domain: updates.tenantId } });
+
+      if (existingProject || existingCompany) {
+        return res.status(400).json({ error: `The subdomain '${updates.tenantId}' is already in use. Please choose a unique subdomain.` });
+      }
     }
 
     // BUG-15 fix: Normalize status before saving
